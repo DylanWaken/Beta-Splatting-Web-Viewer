@@ -1,14 +1,8 @@
 import * as THREE from 'three';
 import { Ray as Ray$1, Plane, MathUtils, EventDispatcher, Vector3, MOUSE, TOUCH, Quaternion, Spherical, Vector2 } from 'three';
 
-
-/* ============================== UncompressedSplatArray ============================== */
-/* This class is used to store uncompressed splat data in an array. */
-/* ==================================================================================== */
-
 class UncompressedSplatArray {
 
-    // Global array offsets
     static OFFSET = {
         X: 0,
         Y: 1,
@@ -20,23 +14,10 @@ class UncompressedSplatArray {
         ROTATION1: 7,
         ROTATION2: 8,
         ROTATION3: 9,
-        BETA: 10,
-        OPACITY: 11,
-        FDC0: 12,
-        FDC1: 13,
-        FDC2: 14,
-        SB0_1: 15,
-        SB0_2: 16,
-        SB0_3: 17,
-        SB0_4: 18,
-        SB0_5: 19,
-        SB0_6: 20,
-        SB1_1: 21,
-        SB1_2: 22,
-        SB1_3: 23,
-        SB1_4: 24,
-        SB1_5: 25,
-        SB1_6: 26,
+        FDC0: 10,
+        FDC1: 11,
+        FDC2: 12,
+        OPACITY: 13
     };
 
     constructor() {
@@ -45,16 +26,7 @@ class UncompressedSplatArray {
     }
 
     static createSplat() {
-        return [
-            0, 0, 0,  // center
-            1, 1, 1,  // scale
-            1, 0, 0, 0,  // rotation
-            0,  // beta
-            0,  // opacity
-            0, 0, 0, // fdc
-            0, 0, 0, 0, 0, 0, // sb0
-            0, 0, 0, 0, 0, 0, // sb1
-        ];
+        return [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0];
     }
 
     addSplat(splat) {
@@ -72,44 +44,19 @@ class UncompressedSplatArray {
         return newSplat;
     }
 
-    addSplatFromComonents(
-        x, y, z,   // center    
-        scale0, scale1, scale2,  // scale
-        rot0, rot1, rot2, rot3,  // rotation
-        beta, opacity, // beta and opacity
-        fdc0, fdc1, fdc2, // fdc
-        sb0_1, sb0_2, sb0_3, sb0_4, sb0_5, sb0_6, // sb0
-        sb1_1, sb1_2, sb1_3, sb1_4, sb1_5, sb1_6) { // sb1
-        const newSplat = [
-            x, y, z,  // center
-            scale0, scale1, scale2, 
-            rot0, rot1, rot2, rot3,  // rotation
-            beta, opacity, // beta and opacity
-            fdc0, fdc1, fdc2, // fdc
-            sb0_1, sb0_2, sb0_3, sb0_4, sb0_5, sb0_6, // sb0
-            sb1_1, sb1_2, sb1_3, sb1_4, sb1_5, sb1_6, // sb1
-        ];
+    addSplatFromComonents(x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity) {
+        const newSplat = [x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity];
         this.addSplat(newSplat);
         return newSplat;
     }
 
     addSplatFromArray(src, srcIndex) {
         const srcSplat = src.splats[srcIndex];
-        this.addSplatFromComonents(
-            srcSplat[0], srcSplat[1], srcSplat[2],  // center
-            srcSplat[3], srcSplat[4], srcSplat[5],  // scale
-            srcSplat[6], srcSplat[7], srcSplat[8], srcSplat[9],  // rotation
-            srcSplat[10], srcSplat[11],  // beta and opacity
-            srcSplat[12], srcSplat[13], srcSplat[14],  // fdc
-            srcSplat[15], srcSplat[16], srcSplat[17], srcSplat[18], srcSplat[19], srcSplat[20],  // sb0
-            srcSplat[21], srcSplat[22], srcSplat[23], srcSplat[24], srcSplat[25], srcSplat[26],  // sb1
-        );
+        this.addSplatFromComonents(srcSplat[0], srcSplat[1], srcSplat[2], srcSplat[3], srcSplat[4], srcSplat[5],
+                                   srcSplat[6], srcSplat[7], srcSplat[8], srcSplat[9],
+                                   srcSplat[10], srcSplat[11], srcSplat[12], srcSplat[13]);
     }
 }
-
-/** ============================== utilities ============================== */
-/* ======================================================================== */
-/* ======================================================================== */
 
 /**
  * AbortablePromise: A quick & dirty wrapper for JavaScript's Promise class that allows the underlying
@@ -334,10 +281,6 @@ const delayedExecute = (func) => {
     });
 };
 
-// ============================== SplatBuffer ============================== */
-/* ======================================================================== */
-/* ======================================================================== */
-
 /**
  * SplatBuffer: Container for splat data from a single scene/file and capable of (mediocre) compression.
  */
@@ -349,13 +292,12 @@ class SplatBuffer {
     static CenterComponentCount = 3;
     static ScaleComponentCount = 3;
     static RotationComponentCount = 4;
-    static BetaComponentCount = 1;
-
-    static RGBComponentCount = 3;
-    static AlphaComponentCount = 1;
-    static SBCComponentCount = 12;
+    static ColorComponentCount = 4;
     static CovarianceComponentCount = 6;
- 
+
+    static SplatScaleOffsetFloat = 3;
+    static SplatRotationOffsetFloat = 6;
+
     static CompressionLevels = {
         0: {
             BytesPerCenter: 12,
