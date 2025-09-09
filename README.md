@@ -1,6 +1,6 @@
 # beta-splatting-webviewer
 
-A 3D Gaussian Splatting web viewer built with Three.js and Flask.
+A DBS web viewer built with Three.js and Flask.
 
 ## SharedArrayBuffer Support
 
