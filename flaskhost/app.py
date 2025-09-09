@@ -22,7 +22,7 @@ ASSETS_DIR = WEB_DIR / "assets"
 @app.route('/')
 def index():
     """Serve the main 3D Gaussian Splat application page from web directory"""
-    return send_from_directory(WEB_DIR, 'index.html')
+    return send_from_directory(WEB_DIR, 'betaindex.html')
 
 @app.route('/three.module.js')
 def three_js():
@@ -33,6 +33,11 @@ def three_js():
 def gaussian_splats_js():
     """Serve the Gaussian Splats 3D module from web directory"""
     return send_from_directory(WEB_DIR, 'gaussian-splats-3d.module.js', mimetype='application/javascript')
+
+@app.route('/betaview.js')
+def betaview_js():
+    """Serve the Beta View module from web directory"""
+    return send_from_directory(WEB_DIR, 'betaview.js', mimetype='application/javascript')
 
 @app.route('/assets/<path:filename>')
 def assets(filename):

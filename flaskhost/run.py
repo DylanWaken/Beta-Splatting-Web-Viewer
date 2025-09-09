@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple startup script for the 3D Gaussian Splat Flask server.
+Simple startup script for the Beta Flask server.
 """
 
 import sys
@@ -15,7 +15,7 @@ from app import app
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("3D Gaussian Splat Flask Server")
+    print("Beta Flask Server")
     print("=" * 60)
     print("Starting server...")
     print("Serving files from:", Path(__file__).parent.parent)
