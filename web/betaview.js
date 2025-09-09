@@ -5797,7 +5797,8 @@ class SplatMesh extends THREE.Mesh {
             attribute uint splatIndex;
 
             uniform highp sampler2D covariancesTexture;
-            uniform highp usampler2D centersColorsTexture;`;
+            uniform highp usampler2D centersColorsTexture;
+            uniform highp sampler2D betasTexture;`;
 
         if (dynamicMode) {
             vertexShaderSource += `
@@ -5820,11 +5821,13 @@ class SplatMesh extends THREE.Mesh {
             uniform float currentTime;
             uniform int fadeInComplete;
             uniform vec3 sceneCenter;
+            uniform vec2 betasTextureSize;
 
             varying vec4 vColor;
             varying vec2 vUv;
 
             varying vec2 vPosition;
+            varying float vBeta;
 
             const float sqrt8 = sqrt(8.0);
             const float minAlpha = 1.0 / 255.0;
@@ -5875,6 +5878,7 @@ class SplatMesh extends THREE.Mesh {
 
                 vPosition = position.xy;
                 vColor = uintToRGBAVec(sampledCenterColor.r);
+                vBeta = texture(betasTexture, getDataUV(1, 0, betasTextureSize)).r;
 
                 vec2 sampledCovarianceA = texture(covariancesTexture, getDataUV(3, 0, covariancesTextureSize)).rg;
                 vec2 sampledCovarianceB = texture(covariancesTexture, getDataUV(3, 1, covariancesTextureSize)).rg;
@@ -6005,6 +6009,7 @@ class SplatMesh extends THREE.Mesh {
             varying vec2 vUv;
 
             varying vec2 vPosition;
+            varying float vBeta;
 
             void main () {
                 // Compute the positional squared distance from the center of the splat to the current fragment.
@@ -6019,7 +6024,7 @@ class SplatMesh extends THREE.Mesh {
                 // Since the rendered splat is scaled by sqrt(8), the inverse covariance matrix that is part of
                 // the gaussian formula becomes the identity matrix. We're then left with (X - mean) * (X - mean),
                 // and since 'mean' is zero, we have X * X, which is the same as A:
-                float opacity = exp(-0.5 * A) * vColor.a;
+                float opacity = pow(1.0 - A, 4.0 * exp(vBeta));
 
                 gl_FragColor = vec4(color.rgb, opacity);
             }`;
