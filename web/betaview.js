@@ -6024,7 +6024,7 @@ class SplatMesh extends THREE.Mesh {
                 // Since the rendered splat is scaled by sqrt(8), the inverse covariance matrix that is part of
                 // the gaussian formula becomes the identity matrix. We're then left with (X - mean) * (X - mean),
                 // and since 'mean' is zero, we have X * X, which is the same as A:
-                float opacity = pow(1.0 - A, 4.0 * exp(vBeta));
+                float opacity = pow(1.0 - A, 4.0 * exp(vBeta)) * vColor.a;
 
                 gl_FragColor = vec4(color.rgb, opacity);
             }`;
