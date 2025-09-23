@@ -37,7 +37,7 @@ def gaussian_splats_js():
 @app.route('/betaview.js')
 def betaview_js():
     """Serve the Beta View module from web directory"""
-    return send_from_directory(WEB_DIR, 'betaview.js', mimetype='application/javascript')
+    return send_from_directory(WEB_DIR, 'betaviewSB.js', mimetype='application/javascript')
 
 @app.route('/assets/<path:filename>')
 def assets(filename):
