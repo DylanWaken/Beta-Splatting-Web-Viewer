@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Ray as Ray$1, Plane, MathUtils, EventDispatcher, Vector3, MOUSE, TOUCH, Quaternion, Spherical, Vector2 } from 'three';
 
 class UncompressedSplatArray {
-
+    
     static OFFSET = {
         X: 0,
         Y: 1,
@@ -18,7 +18,11 @@ class UncompressedSplatArray {
         FDC1: 11,
         FDC2: 12,
         OPACITY: 13,
+        // -----------------------
+        // MODIFY POINT 1: ADD NEW DATA ENTRIES AND OFFSETS
         BETA: 14
+        // END MODIFY POINT 1
+        // -----------------------
     };
 
     constructor() {
@@ -27,7 +31,11 @@ class UncompressedSplatArray {
     }
 
     static createSplat() {
+        // -----------------------
+        // MODIFY POINT 2: ADD DEFAULT INITIALIZATION FOR NEW DATA ENTRIES
         return [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0.0];
+        // END MODIFY POINT 2
+        // -----------------------
     }
 
     addSplat(splat) {
@@ -45,18 +53,26 @@ class UncompressedSplatArray {
         return newSplat;
     }
 
+    // -----------------------
+    // MODIFY POINT 3: ADD NEW COMPONENTS FOR NEW DATA ENTRIES
     addSplatFromComonents(x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity, beta = 0.0) {
         const newSplat = [x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity, beta];
         this.addSplat(newSplat);
         return newSplat;
     }
+    // END MODIFY POINT 3
+    // -----------------------
 
+    // -----------------------
+    // MODIFY POINT 4: ADD NEW COMPONENTS FOR NEW DATA ENTRIES
     addSplatFromArray(src, srcIndex) {
         const srcSplat = src.splats[srcIndex];
         this.addSplatFromComonents(srcSplat[0], srcSplat[1], srcSplat[2], srcSplat[3], srcSplat[4], srcSplat[5],
                                    srcSplat[6], srcSplat[7], srcSplat[8], srcSplat[9],
                                    srcSplat[10], srcSplat[11], srcSplat[12], srcSplat[13], srcSplat[14] ?? 0.0);
     }
+    // END MODIFY POINT 4
+    // -----------------------
 }
 
 /**
@@ -299,6 +315,9 @@ class SplatBuffer {
     static SplatScaleOffsetFloat = 3;
     static SplatRotationOffsetFloat = 6;
 
+    // -----------------------
+    // MODIFY POINT 5: ADD NEW DATA ENTRIES AND OFFSETS 
+    // This is the GPU byte size for each splat data entry
     static CompressionLevels = {
         0: {
             BytesPerCenter: 12,
@@ -319,6 +338,8 @@ class SplatBuffer {
             ScaleRange: 32767
         }
     };
+    // END MODIFY POINT 5
+    // -----------------------
 
     static CovarianceSizeFloats = 6;
 
@@ -443,6 +464,11 @@ class SplatBuffer {
         // TODO: apply transform for spherical harmonics
     }
 
+    // -----------------------
+    // MODIFY POINT 6: ADD DATA FECTHING FUNCTIONS FOR NEW DATA ENTRIES
+    // Here you will use the offsets you created in MODIFY POINT 5
+    // this place will fetch the beta value for a given splat index.
+
     getSplatBeta(globalSplatIndex) {
         const sectionIndex = this.globalSplatIndexToSectionMap[globalSplatIndex];
         const section = this.sections[sectionIndex];
@@ -451,6 +477,9 @@ class SplatBuffer {
         const betaBase = colorBase + this.bytesPerColor;
         return new Float32Array(section.dataArrayUint8.buffer, section.dataBase + betaBase, 1)[0];
     }
+
+    // END MODIFY POINT 6
+    // -----------------------
 
     fillSplatCenterArray(outCenterArray, transform, srcFrom, srcTo, destFrom) {
         const splatCount = this.splatCount;
@@ -602,6 +631,11 @@ class SplatBuffer {
         }
     }
 
+    // -----------------------
+    // MODIFY POINT 7: ADD ARRAY FILLING FUNCTIONS FOR NEW DATA ENTRIES
+    // Here you will use the offsets you created in MODIFY POINT 5
+    // this copies the beta value from serialized splats to the array of beta values.
+
     fillSplatBetaArray(betasArray, transform, srcFrom, srcTo, destFrom) {
         const splatCount = this.splatCount;
         srcFrom = srcFrom || 0;
@@ -617,6 +651,9 @@ class SplatBuffer {
             betasArray[destIndex] = new Float32Array(section.dataArrayUint8.buffer, section.dataBase + betaBase, 1)[0];
         }
     }
+
+    // END MODIFY POINT 7
+    // -----------------------
 
 
     static parseHeader(buffer) {
@@ -703,8 +740,13 @@ class SplatBuffer {
             const bucketsMetaDataSizeBytes = partiallyFilledBucketCount * 4;
             const bucketsStorageSizeBytes = bucketStorageSizeBytes * bucketCount + bucketsMetaDataSizeBytes;
 
+            // -----------------------
+            // MODIFY POINT 8: CHANGE THE STORAGE SIZE CALCULAION, ADD SIZES OF NEW DATA ENTRIES HERE
             const splatDataStorageSizeBytes = (bytesPerCenter + bytesPerScale + bytesPerRotation + bytesPerColor + SplatBuffer.CompressionLevels[compressionLevel].BytesPerBeta) * maxSplatCount;
+            // END MODIFY POINT 8
+            // -----------------------
             const storageSizeBytes = splatDataStorageSizeBytes + bucketsStorageSizeBytes;
+
             const sectionHeader = {
                 splatCountOffset: splatCountOffset,
                 splatCount: secLoadedCountsToMax ? maxSplatCount : 0,
@@ -780,8 +822,17 @@ class SplatBuffer {
         this.bytesPerScale = SplatBuffer.CompressionLevels[this.compressionLevel].BytesPerScale;
         this.bytesPerRotation = SplatBuffer.CompressionLevels[this.compressionLevel].BytesPerRotation;
         this.bytesPerColor = SplatBuffer.CompressionLevels[this.compressionLevel].BytesPerColor;
+        // -----------------------
+        // MODIFY POINT 9: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
         this.bytesPerBeta = SplatBuffer.CompressionLevels[this.compressionLevel].BytesPerBeta;
+        // END MODIFY POINT 9
+        // -----------------------
+
+        // -----------------------
+        // MODIFY POINT 10: ADD SIZES FOR NEW DATA ENTRIES HERE
         this.bytesPerSplat = this.bytesPerCenter + this.bytesPerScale + this.bytesPerRotation + this.bytesPerColor + this.bytesPerBeta;
+        // END MODIFY POINT 10
+        // -----------------------
 
         this.float32PerSplat = this.bytesPerSplat / 4;
         this.uint32PerSplat = this.bytesPerSplat / 4;
@@ -843,8 +894,13 @@ class SplatBuffer {
         const bytesPerScale = SplatBuffer.CompressionLevels[compressionLevel].BytesPerScale;
         const bytesPerRotation = SplatBuffer.CompressionLevels[compressionLevel].BytesPerRotation;
         const bytesPerColor = SplatBuffer.CompressionLevels[compressionLevel].BytesPerColor;
-        const bytesPerSplat = bytesPerCenter + bytesPerScale + bytesPerRotation + bytesPerColor;
+        // -----------------------
+        // MODIFY POINT 11: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
         const bytesPerBeta = SplatBuffer.CompressionLevels[compressionLevel].BytesPerBeta;
+        const bytesPerSplat = bytesPerCenter + bytesPerScale + bytesPerRotation + bytesPerColor + bytesPerBeta;
+        // END MODIFY POINT 11
+        // -----------------------
+
         const compressionScaleRange = SplatBuffer.CompressionLevels[compressionLevel].ScaleRange;
 
         const sectionBuffers = [];
@@ -887,7 +943,11 @@ class SplatBuffer {
                                                       targetSplat[UncompressedSplatArray.OFFSET.FDC1],
                                                       targetSplat[UncompressedSplatArray.OFFSET.FDC2],
                                                       targetSplat[UncompressedSplatArray.OFFSET.OPACITY],
+                                                      // -----------------------
+                                                      // MODIFY POINT 12: ADD NEW DATA ENTRIES HERE
                                                       targetSplat[UncompressedSplatArray.OFFSET.BETA] ?? 0.0);
+                                                      // END MODIFY POINT 12
+                                                      // -----------------------
                 }
             }
 
@@ -897,7 +957,7 @@ class SplatBuffer {
             const partiallyFilledBucketCount = partiallyFullBucketLengths.length;
             const buckets = [...bucketInfo.fullBuckets, ...bucketInfo.partiallyFullBuckets];
 
-            const sectionDataSizeBytes = validSplats.splats.length * (bytesPerSplat + SplatBuffer.CompressionLevels[compressionLevel].BytesPerBeta);
+            const sectionDataSizeBytes = validSplats.splats.length * bytesPerSplat;
             const bucketMetaDataSizeBytes = partiallyFilledBucketCount * 4;
             const bucketDataBytes = compressionLevel === 1 ? buckets.length *
                                                              SplatBuffer.BucketStorageSizeBytes + bucketMetaDataSizeBytes : 0;
@@ -922,8 +982,13 @@ class SplatBuffer {
                     const scaleBase = centerBase + bytesPerCenter;
                     const rotationBase = scaleBase + bytesPerScale;
                     const colorBase = rotationBase + bytesPerRotation;
+                    // -----------------------
+                    // MODIFY POINT 13: ADD NEW DATA ENTRIES HERE
                     const betaBase = colorBase + bytesPerColor;
                     const betaView = new Float32Array(sectionBuffer, betaBase, 1);
+                    // END MODIFY POINT 13
+                    // -----------------------
+
                     if (compressionLevel === 0) {
                         const center = new Float32Array(sectionBuffer, centerBase, SplatBuffer.CenterComponentCount);
                         const rot = new Float32Array(sectionBuffer, rotationBase, SplatBuffer.RotationComponentCount);
@@ -949,8 +1014,12 @@ class SplatBuffer {
                         const center = new Uint16Array(sectionBuffer, centerBase, SplatBuffer.CenterComponentCount);
                         const rot = new Uint16Array(sectionBuffer, rotationBase, SplatBuffer.RotationComponentCount);
                         const scale = new Uint16Array(sectionBuffer, scaleBase, SplatBuffer.ScaleComponentCount);
+                        // -----------------------
+                        // MODIFY POINT 14: ADD NEW DATA ENTRIES HERE, REMEMBER TO KEEP ADDING OFFSETS ALONG THE WAY
                         const betaBase = colorBase + bytesPerColor;
                         const betaView = new Float32Array(sectionBuffer, betaBase, 1);
+                        // END MODIFY POINT 14
+                        // -----------------------
 
                         if (targetSplat[UncompressedSplatArray.OFFSET.SCALE0] !== undefined) {
                             tempRotation.set(targetSplat[UncompressedSplatArray.OFFSET.ROTATION0],
@@ -993,7 +1062,11 @@ class SplatBuffer {
                         rgba[3] = 255;
                     }
 
+                    // -----------------------
+                    // MODIFY POINT 15: ADD NEW DATA ENTRIES HERE
                     betaView[0] = targetSplat[UncompressedSplatArray.OFFSET.BETA] ?? 0.0;
+                    // END MODIFY POINT 15
+                    // -----------------------
 
                     outSplatCount++;
                 }
@@ -1503,6 +1576,12 @@ class CompressedPlyParser {
     const outBytesPerRotation = SplatBuffer.CompressionLevels[0].BytesPerRotation;
     const outBytesPerSplat = SplatBuffer.CompressionLevels[0].BytesPerSplat;
 
+    // -----------------------
+    // MODIFY POINT 16: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
+    const outBytesPerBeta = SplatBuffer.CompressionLevels[0].BytesPerBeta;
+    // END MODIFY POINT 16
+    // -----------------------
+
     const { positionExtremes, scaleExtremes, position, rotation, scale, color } =
       CompressedPlyParser.getElementStorageArrays(chunkElement, vertexElement);
 
@@ -1519,7 +1598,11 @@ class CompressedPlyParser {
       const outScale = new Float32Array(outBuffer, outBase + outBytesPerCenter, 3);
       const outRotation = new Float32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale, 4);
       const outColor = new Uint8Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation, 4);
-      const outBeta = new Float32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + 4, 1);
+      // -----------------------
+      // MODIFY POINT 17: ADD NEW DATA ENTRIES HERE, REMEMBER TO KEEP ADDING OFFSETS ALONG THE WAY
+      const outBeta = new Float32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor, 1);
+      // END MODIFY POINT 17
+      // -----------------------
 
       outCenter[0] = tempSplat[OFFSET.X];
       outCenter[1] = tempSplat[OFFSET.Y];
@@ -1539,7 +1622,11 @@ class CompressedPlyParser {
       outColor[2] = tempSplat[OFFSET.FDC2];
       outColor[3] = tempSplat[OFFSET.OPACITY];
 
+      // -----------------------
+      // MODIFY POINT 18: ADD NEW DATA ENTRIES HERE
       outBeta[0] = tempSplat[OFFSET.BETA] || 0.0;
+      // END MODIFY POINT 18
+      // -----------------------
     }
   }
 
@@ -1571,8 +1658,12 @@ class PlyParser {
 
     static HeaderEndToken = 'end_header';
 
+    // -----------------------
+    // MODIFY POINT 19: ADD NEW DATA ENTRIES ACCORDING TO NAMES IN THE PLY FILE
     static Fields = ['scale_0', 'scale_1', 'scale_2', 'rot_0', 'rot_1', 'rot_2', 'rot_3',
                      'x', 'y', 'z', 'sh0_0', 'sh0_1', 'sh0_2', 'red', 'green', 'blue', 'opacity', 'beta'];
+    // END MODIFY POINT 19
+    // -----------------------
 
     static checkTextForEndHeader(endHeaderTestText) {
         if (endHeaderTestText.includes(PlyParser.HeaderEndToken)) {
@@ -1702,8 +1793,13 @@ class PlyParser {
         const outBytesPerScale = SplatBuffer.CompressionLevels[0].BytesPerScale;
         const outBytesPerRotation = SplatBuffer.CompressionLevels[0].BytesPerRotation;
         const outBytesPerSplat = SplatBuffer.CompressionLevels[0].BytesPerSplat;
+
+        // -----------------------
+        // MODIFY POINT 20: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
         const outBytesPerColor = SplatBuffer.CompressionLevels[0].BytesPerColor;
         const outBytesPerBeta = SplatBuffer.CompressionLevels[0].BytesPerBeta;
+        // END MODIFY POINT 20
+        // -----------------------
 
         for (let i = fromSplat; i <= toSplat; i++) {
             // added a boundary check condition to prevent out of bounds access
@@ -1718,7 +1814,11 @@ class PlyParser {
             const outScale = new Float32Array(toBuffer, outBase + outBytesPerCenter, 3);
             const outRotation = new Float32Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale, 4);
             const outColor = new Uint8Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation, 4);
+            // -----------------------
+            // MODIFY POINT 21: ADD NEW DATA ENTRIES HERE, REMEMBER TO KEEP ADDING OFFSETS ALONG THE WAY
             const outBeta = new Float32Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor, 1);
+            // END MODIFY POINT 21
+            // -----------------------
 
             outCenter[0] = parsedSplat[UncompressedSplatArray.OFFSET.X];
             outCenter[1] = parsedSplat[UncompressedSplatArray.OFFSET.Y];
@@ -1738,7 +1838,11 @@ class PlyParser {
             outColor[2] = parsedSplat[UncompressedSplatArray.OFFSET.FDC2];
             outColor[3] = parsedSplat[UncompressedSplatArray.OFFSET.OPACITY];
 
+            // -----------------------
+            // MODIFY POINT 22: ADD NEW DATA ENTRIES HERE
             outBeta[0] = parsedSplat[UncompressedSplatArray.OFFSET.BETA];
+            // END MODIFY POINT 22
+            // -----------------------
 
         }
     }
@@ -1780,11 +1884,15 @@ class PlyParser {
                 newSplat[UncompressedSplatArray.OFFSET.OPACITY] = (1 / (1 + Math.exp(-rawVertex['opacity']))) * 255;
             }
 
+            // -----------------------
+            // MODIFY POINT 23: ADD NEW DATA ENTRIES HERE
             if (rawVertex['beta'] !== undefined) {
                 newSplat[UncompressedSplatArray.OFFSET.BETA] = rawVertex['beta'];
             } else {
                 newSplat[UncompressedSplatArray.OFFSET.BETA] = 0.0;
             }
+            // END MODIFY POINT 23
+            // -----------------------
 
             newSplat[UncompressedSplatArray.OFFSET.FDC0] = clamp(Math.floor(newSplat[UncompressedSplatArray.OFFSET.FDC0]), 0, 255);
             newSplat[UncompressedSplatArray.OFFSET.FDC1] = clamp(Math.floor(newSplat[UncompressedSplatArray.OFFSET.FDC1]), 0, 255);
@@ -5695,7 +5803,11 @@ const dummyMaterial = new THREE.MeshBasicMaterial();
 
 const COVARIANCES_ELEMENTS_PER_SPLAT = 6;
 const CENTER_COLORS_ELEMENTS_PER_SPLAT = 4;
+// -----------------------
+// MODIFY POINT 24: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
 const BETAS_ELEMENTS_PER_SPLAT = 1;
+// END MODIFY POINT 24
+// -----------------------
 
 const SCENE_FADEIN_RATE_FAST = 0.012;
 const SCENE_FADEIN_RATE_GRADUAL = 0.003;
@@ -5777,6 +5889,7 @@ class SplatMesh extends THREE.Mesh {
         this.disposed = false;
     }
 
+
     /**
      * Build the Three.js material that is used to render the splats.
      * @param {number} dynamicMode If true, it means the scene geometry represented by this splat mesh is not stationary or
@@ -5790,6 +5903,10 @@ class SplatMesh extends THREE.Mesh {
 
         // Contains the code to project 3D covariance to 2D and from there calculate the quad (using the eigen vectors of the
         // 2D covariance) that is ultimately rasterized
+
+        // -----------------------
+        // MODIFY POINT 25: ADD NEW DATA ENTRIES TO THE VERTEX SHADER
+
         let vertexShaderSource = `
             precision highp float;
             #include <common>
@@ -5800,6 +5917,9 @@ class SplatMesh extends THREE.Mesh {
             uniform highp usampler2D centersColorsTexture;
             uniform highp sampler2D betasTexture;`;
 
+        // END MODIFY POINT 25
+        // -----------------------
+
         if (dynamicMode) {
             vertexShaderSource += `
                 uniform highp usampler2D transformIndexesTexture;
@@ -5808,6 +5928,8 @@ class SplatMesh extends THREE.Mesh {
             `;
         }
 
+        // -----------------------
+        // MODIFY POINT 26: ADD NEW DATA ENTRIES TO THE VERTEX SHADER
         vertexShaderSource += `
             uniform vec2 focal;
             uniform float inverseFocalAdjustment;
@@ -5854,6 +5976,9 @@ class SplatMesh extends THREE.Mesh {
 
                 uvec4 sampledCenterColor = texture(centersColorsTexture, getDataUV(1, 0, centersColorsTextureSize));
                 vec3 splatCenter = uintBitsToFloat(uvec3(sampledCenterColor.gba));`;
+
+        // END MODIFY POINT 26
+        // -----------------------
 
             if (dynamicMode) {
                 vertexShaderSource += `
@@ -5999,6 +6124,8 @@ class SplatMesh extends THREE.Mesh {
                 vPosition *= sqrt8;
             }`;
 
+        // -----------------------
+        // MODIFY POINT 27: ADD NEW DATA ENTRIES TO THE FRAGMENT SHADER， ADD DATA ENTRIES
         const fragmentShaderSource = `
             precision highp float;
             #include <common>
@@ -6028,6 +6155,9 @@ class SplatMesh extends THREE.Mesh {
 
                 gl_FragColor = vec4(color.rgb, opacity);
             }`;
+
+        // END MODIFY POINT 27
+        // -----------------------
 
         const uniforms = {
             'sceneCenter': {
@@ -6469,7 +6599,12 @@ class SplatMesh extends THREE.Mesh {
         const COVARIANCES_ELEMENTS_PER_TEXEL = 2;
         const CENTER_COLORS_ELEMENTS_PER_TEXEL = 4;
         const TRANSFORM_INDEXES_ELEMENTS_PER_TEXEL = 1;
+
+        // -----------------------
+        // MODIFY POINT 28: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
         const BETAS_ELEMENTS_PER_TEXEL = 1;
+        // END MODIFY POINT 28
+        // -----------------------
 
         const maxSplatCount = this.getMaxSplatCount();
         const splatCount = this.getSplatCount();
@@ -6486,11 +6621,15 @@ class SplatMesh extends THREE.Mesh {
             }
         };
 
+        // -----------------------
+        // MODIFY POINT 29: ADD NEW DATA ENTRIES TO THE PADDED DATA
         const updateBetasPaddedData = (to, from, betas, paddedBetas) => {
             for (let c = to; c < from; c++) {
                 paddedBetas[c] = betas[c];
             }
         };
+        // END MODIFY POINT 29
+        // -----------------------
 
         const computeDataTextureSize = (elementsPerTexel, elementsPerSplatl) => {
             const texSize = new THREE.Vector2(4096, 1024);
@@ -6505,8 +6644,13 @@ class SplatMesh extends THREE.Mesh {
             const covariances = new Float32Array(maxSplatCount * COVARIANCES_ELEMENTS_PER_SPLAT);
             const centers = new Float32Array(maxSplatCount * 3);
             const colors = new Uint8Array(maxSplatCount * 4);
+
+            // -----------------------
+            // MODIFY POINT 30: ADD NEW DATA ENTRIES TO THE PADDED DATA
             const betas = new Float32Array(maxSplatCount * BETAS_ELEMENTS_PER_SPLAT);
             this.fillSplatDataArrays(covariances, centers, colors, undefined, undefined, undefined, betas);
+            // END MODIFY POINT 30
+            // -----------------------
 
             // set up covariances data texture
             const covTexSize = computeDataTextureSize(COVARIANCES_ELEMENTS_PER_TEXEL, 6);
@@ -6531,6 +6675,9 @@ class SplatMesh extends THREE.Mesh {
             this.material.uniforms.centersColorsTextureSize.value.copy(centersColsTexSize);
             this.material.uniformsNeedUpdate = true;
 
+            // -----------------------
+            // MODIFY POINT 31: ADD DATA ENTRIES TO TEXTURES
+
             // set up betas data texture (Float32, independent of compression)
             const betasTexSize = computeDataTextureSize(BETAS_ELEMENTS_PER_TEXEL, BETAS_ELEMENTS_PER_SPLAT);
             const paddedBetas = new Float32Array(betasTexSize.x * betasTexSize.y * BETAS_ELEMENTS_PER_TEXEL);
@@ -6544,6 +6691,12 @@ class SplatMesh extends THREE.Mesh {
             this.material.uniforms.betasTexture.value = betasTex;
             this.material.uniforms.betasTextureSize.value.copy(betasTexSize);
             this.material.uniformsNeedUpdate = true;
+
+            // END MODIFY POINT 31
+            // -----------------------
+
+            // -----------------------
+            // MODIFY POINT 32: ADD DATA ENTRIES TO TEXTURES
 
             this.splatDataTextures = {
                 'baseData': {
@@ -6566,8 +6719,11 @@ class SplatMesh extends THREE.Mesh {
                     'data': paddedBetas,
                     'texture': betasTex,
                     'size': betasTexSize
-                }
+                }   
             };
+
+            // END MODIFY POINT 32
+            // -----------------------
 
             if (this.dynamicMode) {
                 const transformIndexesTexSize = computeDataTextureSize(TRANSFORM_INDEXES_ELEMENTS_PER_TEXEL, 4);
@@ -6590,11 +6746,15 @@ class SplatMesh extends THREE.Mesh {
             }
         } else {
 
+            // -----------------------
+            // MODIFY POINT 33: ADD NEW DATA ENTRIES FOR ARRAY FILLING
             this.fillSplatDataArrays(this.splatDataTextures.baseData.covariances,
                                      this.splatDataTextures.baseData.centers,
                                      this.splatDataTextures.baseData.colors,
                                      undefined, true, undefined,
                                      this.splatDataTextures.baseData.betas);
+            // END MODIFY POINT 33
+            // -----------------------
 
             const covariancesTextureDescriptor = this.splatDataTextures['covariances'];
             const paddedCovariances = covariancesTextureDescriptor.data;
@@ -6627,6 +6787,8 @@ class SplatMesh extends THREE.Mesh {
                                        CENTER_COLORS_ELEMENTS_PER_TEXEL, CENTER_COLORS_ELEMENTS_PER_SPLAT, 4);
             }
 
+            // -----------------------
+            // MODIFY POINT 34: ADD NEW DATA ENTRIES FOR TEXTURE UPDATES
             const betasTextureDescriptor = this.splatDataTextures['betas'];
             const paddedBetas = betasTextureDescriptor.data;
             const betasTexture = betasTextureDescriptor.texture;
@@ -6638,6 +6800,9 @@ class SplatMesh extends THREE.Mesh {
                 this.updateDataTexture(paddedBetas, betasTextureDescriptor, betasTextureProps,
                                        BETAS_ELEMENTS_PER_TEXEL, BETAS_ELEMENTS_PER_SPLAT, 4);
             }
+
+            // END MODIFY POINT 34
+            // -----------------------
 
             if (this.dynamicMode) {
                 const transformIndexesTexDesc = this.splatDataTextures['tansformIndexes'];
