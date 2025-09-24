@@ -22,6 +22,7 @@ class UncompressedSplatArray {
         // MODIFY POINT 1: ADD NEW DATA ENTRIES AND OFFSETS
         BETA: 14,
 
+        // encoding: R, G, B, Theta, Phi, Beta
         SB_PARAM_0: 15,
         SB_PARAM_1: 16,
         SB_PARAM_2: 17,
@@ -358,6 +359,7 @@ class SplatBuffer {
 
     static CurrentMajorVersion = 0;
     static CurrentMinorVersion = 1;
+    static SB_PARAM_FLOAT_COUNT = 12;
 
     static CenterComponentCount = 3;
     static ScaleComponentCount = 3;
@@ -378,8 +380,8 @@ class SplatBuffer {
             BytesPerScale: 12,
             BytesPerRotation: 16,
             BytesPerBeta: 4,
-            BytesPerSBParams: 32,  // float32 * 3 + RGBA, float32 * 3 + RGBA
-            BytesPerSplat: 80,
+            BytesPerSBParams: 48,  // float32 * 12
+            BytesPerSplat: 96,
             ScaleRange: 1
         },
         1: {
@@ -388,8 +390,8 @@ class SplatBuffer {
             BytesPerScale: 6,
             BytesPerRotation: 8,
             BytesPerBeta: 4,
-            BytesPerSBParams: 32,  // float32 * 3 + RGBA, float32 * 3 + RGBA
-            BytesPerSplat: 60,
+            BytesPerSBParams: 48,  // float32 * 12
+            BytesPerSplat: 76,
             ScaleRange: 32767
         }
     };
@@ -723,10 +725,10 @@ class SplatBuffer {
             const betaBase = colorBase + this.bytesPerColor;
             const sbParamsBase = betaBase + this.bytesPerBeta;
             const destIndex = i - srcFrom + destFrom;
-            const floatView = new Float32Array(section.dataArrayUint8.buffer, section.dataBase + sbParamsBase, 8);
+            const floatView = new Float32Array(section.dataArrayUint8.buffer, section.dataBase + sbParamsBase, 12);
             
-            const inArrayDestBase = destIndex * 8;
-            for (let j = 0; j < 8; j++) {
+            const inArrayDestBase = destIndex * SplatBuffer.SB_PARAM_FLOAT_COUNT;
+            for (let j = 0; j < SplatBuffer.SB_PARAM_FLOAT_COUNT; j++) {
                 sbParamsEntryArray[inArrayDestBase + j] = floatView[j];
             }
         }
@@ -1098,8 +1100,7 @@ class SplatBuffer {
                     
                     const sbParamsBase = betaBase + bytesPerBeta;
                     // we have int view for fetcing RGB stored at the 3rd and the 7th slot (as integers)
-                    const sbFloatView = new Float32Array(sectionBuffer, sbParamsBase, 8);
-                    const sbIntView = new Uint32Array(sectionBuffer, sbParamsBase, 8);
+                    const sbFloatView = new Float32Array(sectionBuffer, sbParamsBase, SplatBuffer.SB_PARAM_FLOAT_COUNT);
                     // END MODIFY POINT 13
                     // -----------------------
 
@@ -1174,27 +1175,9 @@ class SplatBuffer {
                     // MODIFY POINT 15: ADD NEW DATA ENTRIES HERE
                     betaView[0] = targetSplat[UncompressedSplatArray.OFFSET.BETA] ?? 0.0;
 
-                    sbFloatView[0] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0] ?? 0.0;
-                    sbFloatView[1] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_1] ?? 0.0;
-                    sbFloatView[2] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2] ?? 0.0;
-                    
-                    // rgb bytes
-                    let r_byte_1 = Math.round(targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] * 255) & 0xFF;
-                    let g_byte_1 = Math.round(targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_4] * 255) & 0xFF;
-                    let b_byte_1 = Math.round(targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_5] * 255) & 0xFF;
-
-                    sbIntView[3] = (r_byte_1 << 24) | (g_byte_1 << 16) | (b_byte_1 << 8) | 0xFF;
-
-                    sbFloatView[4] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6] ?? 0.0;
-                    sbFloatView[5] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_7] ?? 0.0;
-                    sbFloatView[6] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_8] ?? 0.0;
-
-                    // rgb bytes
-                    let r_byte_2 = Math.round(targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] * 255) & 0xFF;
-                    let g_byte_2 = Math.round(targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_10] * 255) & 0xFF;
-                    let b_byte_2 = Math.round(targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] * 255) & 0xFF;
-
-                    sbIntView[7] = (r_byte_2 << 24) | (g_byte_2 << 16) | (b_byte_2 << 8) | 0xFF;
+                    for (let p = 0; p < SplatBuffer.SB_PARAM_FLOAT_COUNT; p++) {
+                        sbFloatView[p] = targetSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0 + p] ?? 0.0;
+                    }
 
                     // END MODIFY POINT 15
                     // -----------------------
@@ -1710,7 +1693,6 @@ class CompressedPlyParser {
     // -----------------------
     // MODIFY POINT 16: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
     const outBytesPerBeta = SplatBuffer.CompressionLevels[0].BytesPerBeta;
-    const outBytesPerSBParams = SplatBuffer.CompressionLevels[0].BytesPerSBParams;
     // END MODIFY POINT 16
     // -----------------------
 
@@ -1733,8 +1715,7 @@ class CompressedPlyParser {
       // -----------------------
       // MODIFY POINT 17: ADD NEW DATA ENTRIES HERE, REMEMBER TO KEEP ADDING OFFSETS ALONG THE WAY
       const outBeta = new Float32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor, 1);
-      const outSBParamsFloatView = new Float32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor + outBytesPerBeta, 8);
-      const outSBParamsIntView = new Uint32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor + outBytesPerBeta, 8);
+      const outSBParamsFloatView = new Float32Array(outBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor + outBytesPerBeta, SplatBuffer.SB_PARAM_FLOAT_COUNT);
       // END MODIFY POINT 17
       // -----------------------
 
@@ -1760,27 +1741,9 @@ class CompressedPlyParser {
       // MODIFY POINT 18: ADD NEW DATA ENTRIES HERE
       outBeta[0] = tempSplat[OFFSET.BETA] || 0.0;
 
-      outSBParamsFloatView[0] = tempSplat[OFFSET.SB_PARAM_0] || 0.0;
-      outSBParamsFloatView[1] = tempSplat[OFFSET.SB_PARAM_1] || 0.0;
-      outSBParamsFloatView[2] = tempSplat[OFFSET.SB_PARAM_2] || 0.0;
-
-      // rgb bytes
-      let r_byte_1 = Math.round(tempSplat[OFFSET.SB_PARAM_3] * 255) & 0xFF;
-      let g_byte_1 = Math.round(tempSplat[OFFSET.SB_PARAM_4] * 255) & 0xFF;
-      let b_byte_1 = Math.round(tempSplat[OFFSET.SB_PARAM_5] * 255) & 0xFF;
-
-      outSBParamsIntView[3] = (r_byte_1 << 24) | (g_byte_1 << 16) | (b_byte_1 << 8) | 0xFF;
-
-      outSBParamsFloatView[4] = tempSplat[OFFSET.SB_PARAM_6] || 0.0;
-      outSBParamsFloatView[5] = tempSplat[OFFSET.SB_PARAM_7] || 0.0;
-      outSBParamsFloatView[6] = tempSplat[OFFSET.SB_PARAM_8] || 0.0;
-
-      // rgb bytes
-      let r_byte_2 = Math.round(tempSplat[OFFSET.SB_PARAM_9] * 255) & 0xFF;
-      let g_byte_2 = Math.round(tempSplat[OFFSET.SB_PARAM_10] * 255) & 0xFF;
-      let b_byte_2 = Math.round(tempSplat[OFFSET.SB_PARAM_11] * 255) & 0xFF;
-
-      outSBParamsIntView[7] = (r_byte_2 << 24) | (g_byte_2 << 16) | (b_byte_2 << 8) | 0xFF;
+      for (let p = 0; p < SplatBuffer.SB_PARAM_FLOAT_COUNT; p++) {
+        outSBParamsFloatView[p] = tempSplat[OFFSET.SB_PARAM_0 + p] || 0.0;
+      }
 
       // END MODIFY POINT 18
       // -----------------------
@@ -1984,7 +1947,6 @@ class PlyParser {
         // MODIFY POINT 20: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
         const outBytesPerColor = SplatBuffer.CompressionLevels[0].BytesPerColor;
         const outBytesPerBeta = SplatBuffer.CompressionLevels[0].BytesPerBeta;
-        const outBytesPerSBParams = SplatBuffer.CompressionLevels[0].BytesPerSBParams;
         // END MODIFY POINT 20
         // -----------------------
 
@@ -2004,8 +1966,7 @@ class PlyParser {
             // -----------------------
             // MODIFY POINT 21: ADD NEW DATA ENTRIES HERE, REMEMBER TO KEEP ADDING OFFSETS ALONG THE WAY
             const outBeta = new Float32Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor, 1);
-            const outSBParamsFloatView = new Float32Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor + outBytesPerBeta, 8);
-            const outSBParamsIntView = new Uint32Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor + outBytesPerBeta, 8);
+            const outSBParamsFloatView = new Float32Array(toBuffer, outBase + outBytesPerCenter + outBytesPerScale + outBytesPerRotation + outBytesPerColor + outBytesPerBeta, SplatBuffer.SB_PARAM_FLOAT_COUNT);
             // END MODIFY POINT 21
             // -----------------------
 
@@ -2031,28 +1992,9 @@ class PlyParser {
             // MODIFY POINT 22: ADD NEW DATA ENTRIES HERE
             outBeta[0] = parsedSplat[UncompressedSplatArray.OFFSET.BETA];
 
-            outSBParamsFloatView[0] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0];
-            outSBParamsFloatView[1] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_1];
-            outSBParamsFloatView[2] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2];
-
-            // rgb bytes
-            let r_byte_1 = Math.round(parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] * 255) & 0xFF;
-            let g_byte_1 = Math.round(parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_4] * 255) & 0xFF;
-            let b_byte_1 = Math.round(parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_5] * 255) & 0xFF;
-
-            outSBParamsIntView[3] = (r_byte_1 << 24) | (g_byte_1 << 16) | (b_byte_1 << 8) | 0xFF;
-
-            outSBParamsFloatView[4] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6];
-            outSBParamsFloatView[5] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_7];
-            outSBParamsFloatView[6] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_8];
-
-            // rgb bytes
-            let r_byte_2 = Math.round(parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] * 255) & 0xFF;
-            let g_byte_2 = Math.round(parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_10] * 255) & 0xFF;
-            let b_byte_2 = Math.round(parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] * 255) & 0xFF;
-
-            outSBParamsIntView[7] = (r_byte_2 << 24) | (g_byte_2 << 16) | (b_byte_2 << 8) | 0xFF;
-
+            for (let p = 0; p < SplatBuffer.SB_PARAM_FLOAT_COUNT; p++) {
+                outSBParamsFloatView[p] = parsedSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0 + p];
+            }
             // END MODIFY POINT 22
             // -----------------------
 
@@ -6091,9 +6033,8 @@ const CENTER_COLORS_ELEMENTS_PER_SPLAT = 4;
 // -----------------------
 // MODIFY POINT 24: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
 const BETAS_ELEMENTS_PER_SPLAT = 1;
-const SB_PARAMS_ELEMENTS_PER_SPLAT = 1;  // How many SB groups we have (1 in this case, but it takes up 8 bytes for 1 sb)
+const SB_PARAMS_ELEMENTS_PER_SPLAT = 1;  // How many SB groups we have (1 in this case, but it takes up 12 bytes for 1 sb)
                                          // because this is used in texture size calculation, if we put not 1 here it will change texture parameters
-const SB_PARAMETER_SIZE_BYTES = 8;       // TODO: in the future make this registry modular
 // END MODIFY POINT 24
 // -----------------------
 
@@ -6195,7 +6136,9 @@ class SplatMesh extends THREE.Mesh {
         // -----------------------
         // MODIFY POINT 25: ADD NEW DATA ENTRIES TO THE VERTEX SHADER
         // sbParamsTexture1 format: R32G32B32A32_FLOAT
-        // sbParamsTexture2 format: R32G32B32A32_UINT
+        // sbParamsTexture2 format: R32G32B32A32_FLOAT
+        // sbColorsTexture1 format: R32G32B32A32_FLOAT
+        // sbColorsTexture2 format: R32G32B32A32_FLOAT
 
         let vertexShaderSource = `
             precision highp float;
@@ -6208,6 +6151,8 @@ class SplatMesh extends THREE.Mesh {
             uniform highp sampler2D betasTexture;
             uniform highp sampler2D sbParamsTexture1;
             uniform highp sampler2D sbParamsTexture2;
+            uniform highp sampler2D sbColorsTexture1;
+            uniform highp sampler2D sbColorsTexture2;
             `;
 
         // END MODIFY POINT 25
@@ -6240,6 +6185,8 @@ class SplatMesh extends THREE.Mesh {
 
             uniform vec2 sbParamsTexture1Size;
             uniform vec2 sbParamsTexture2Size;
+            uniform vec2 sbColorsTexture1Size;
+            uniform vec2 sbColorsTexture2Size;
 
             varying vec4 vColor;
             varying vec2 vUv;
@@ -6296,28 +6243,57 @@ class SplatMesh extends THREE.Mesh {
 
                 vPosition = position.xy;
                 vColor = uintToRGBAVec(sampledCenterColor.r);
+                vec3 originalColor = vColor.rgb;
                 vBeta = texture(betasTexture, getDataUV(1, 0, betasTextureSize)).r;
+                vColor.rgb = vec3(0.0, 0.0, 0.0);
+
+                // Camera-to-point vector in world coordinates
+                vec3 cameraWorldPos = -transpose(mat3(viewMatrix)) * viewMatrix[3].xyz;
+                vec3 CameraForward = normalize(splatCenter - cameraWorldPos);
 
                 // TODO:SB evaluate first spherical beta from sbParamsTexture1
                 vec3 sbThetaPhiBeta1 = texture(sbParamsTexture1, getDataUV(1, 0, sbParamsTexture1Size)).rgb;
-                // Read the float value and reinterpret its bits as uint
-                float sbRGBA1_f = texture(sbParamsTexture2, getDataUV(1, 0, sbParamsTexture1Size)).a;
-                uint sbRGBA1 = floatBitsToUint(sbRGBA1_f);
-                vec3 sbRGBFloat = vec3(
-                    (sbRGBA1 >> 24u) & 0xFFu, 
-                    (sbRGBA1 >> 16u) & 0xFFu, 
-                    (sbRGBA1 >> 8u) & 0xFFu
-                ) / 255.0;
+                vec3 sbRGBFloat1 = texture(sbColorsTexture1, getDataUV(1, 0, sbColorsTexture1Size)).rgb;
 
                 // TODO:SB evaluate second spherical beta from sbParamsTexture2
                 vec3 sbThetaPhiBeta2 = texture(sbParamsTexture1, getDataUV(1, 0, sbParamsTexture2Size)).rgb;
-                float sbRGBA2_f = texture(sbParamsTexture2, getDataUV(1, 0, sbParamsTexture2Size)).a;
-                uint sbRGBA2 = floatBitsToUint(sbRGBA2_f);
-                vec3 sbRGBFloat2 = vec3(
-                    (sbRGBA2 >> 24u) & 0xFFu, 
-                    (sbRGBA2 >> 16u) & 0xFFu, 
-                    (sbRGBA2 >> 8u) & 0xFFu
-                ) / 255.0;
+                vec3 sbRGBFloat2 = texture(sbColorsTexture2, getDataUV(1, 0, sbColorsTexture2Size)).rgb;
+                
+                // Spherical Beta evaluation
+                // Normalize the camera forward direction
+                vec3 dir_norm = CameraForward;
+
+                // Evaluate first spherical beta
+                vec3 dir_beta_mean1 = vec3(
+                    sin(sbThetaPhiBeta1.x) * cos(sbThetaPhiBeta1.y),
+                    sin(sbThetaPhiBeta1.x) * sin(sbThetaPhiBeta1.y),
+                    cos(sbThetaPhiBeta1.x)
+                );
+                
+                float dot1 = dot(dir_norm, dir_beta_mean1);
+                float betaTerm1 = 0.0;
+                if (dot1 > 0.0) {
+                    betaTerm1 = pow(dot1, 4.0 * exp(sbThetaPhiBeta1.z));
+                }
+                
+                // Apply first spherical beta contribution
+                vColor.rgb += betaTerm1 * sbRGBFloat1;
+
+                // Evaluate second spherical beta
+                vec3 dir_beta_mean2 = vec3(
+                    sin(sbThetaPhiBeta2.x) * cos(sbThetaPhiBeta2.y),
+                    sin(sbThetaPhiBeta2.x) * sin(sbThetaPhiBeta2.y),
+                    cos(sbThetaPhiBeta2.x)
+                );
+                
+                float dot2 = dot(dir_norm, dir_beta_mean2);
+                float betaTerm2 = 0.0;
+                if (dot2 > 0.0) {
+                    betaTerm2 = pow(dot2, 4.0 * exp(sbThetaPhiBeta2.z));
+                }
+                
+                // Apply second spherical beta contribution
+                vColor.rgb += betaTerm2 * sbRGBFloat2;
 
                 vec2 sampledCovarianceA = texture(covariancesTexture, getDataUV(3, 0, covariancesTextureSize)).rg;
                 vec2 sampledCovarianceB = texture(covariancesTexture, getDataUV(3, 1, covariancesTextureSize)).rg;
@@ -6919,7 +6895,7 @@ class SplatMesh extends THREE.Mesh {
         // -----------------------
         // MODIFY POINT 28: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
         const BETAS_ELEMENTS_PER_TEXEL = 1;
-        const SB_PARAMS_ELEMENTS_PER_TEXEL = 1;  // each R32G32B32A32_FLOAT stores 1 SB
+        const SB_PARAMS_ELEMENTS_PER_TEXEL = 4;  // RGBA: 4 float elements per texel
         // END MODIFY POINT 28
         // -----------------------
 
@@ -6948,16 +6924,59 @@ class SplatMesh extends THREE.Mesh {
 
         const updateSBParamsPaddedData = (to, from, sbParams, paddedSBParams, firstSB = false) => {
 
-            const sbParamsUintView = new Uint32Array(sbParams);
-            const paddedSBParamsUintView = new Uint32Array(paddedSBParams);
+            // Ensure we are viewing the SAME backing buffers to actually mutate the arrays
+            const sbParamsFloatView = sbParams instanceof Float32Array ? sbParams : new Float32Array(sbParams);
+            const paddedSBParamsFloatView = new Float32Array(paddedSBParams.buffer);
+
+            const SB_SIZE_IN_TEXEL = 4;
 
             for (let c = to; c < from; c++) {
-                for (let i = 0; i < SB_PARAMETER_SIZE_BYTES; i++) {
-                    if (firstSB) {
-                        paddedSBParamsUintView[c * SB_PARAMETER_SIZE_BYTES + i] = sbParamsUintView[c * SB_PARAMETER_SIZE_BYTES + i];
-                    } else {
-                        paddedSBParamsUintView[c * SB_PARAMETER_SIZE_BYTES + i + SB_PARAMETER_SIZE_BYTES / 2] = sbParamsUintView[c * SB_PARAMETER_SIZE_BYTES + i + SB_PARAMETER_SIZE_BYTES / 2];
-                    }
+                if (firstSB) {
+                    // Theta, Phi, Beta
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 3];
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 4];
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 5];
+                    // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = 3.14;
+                    // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
+                    // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 0.0;
+                }
+                else {
+                    // Theta, Phi, Beta
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 9];
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 10];
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 11];
+                    // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = 3.14;
+                    // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
+                    // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 0.0;
+                }
+            }
+        };
+
+        const updateSBColorsPaddedData = (to, from, sbParams, paddedSBColors, firstSB = false) => {
+            // Ensure we are viewing the SAME backing buffers to actually mutate the arrays
+            const sbParamsFloatView = sbParams instanceof Float32Array ? sbParams : new Float32Array(sbParams);
+            const paddedSBColorsFloatView = new Float32Array(paddedSBColors.buffer);
+
+            const SB_SIZE_IN_TEXEL = 4;
+
+            for (let c = to; c < from; c++) {
+                if (firstSB) {
+                    // R, G, B with softplus activation
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 0] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 1] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 2] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = 0.0;
+                    // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
+                    // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 1.0;
+                }
+                else {
+                    // R, G, B with softplus activation
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 6] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 7] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 8] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = 0.0;
+                    // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
+                    // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 0.0;
                 }
             }
         };
@@ -6982,7 +7001,7 @@ class SplatMesh extends THREE.Mesh {
             // -----------------------
             // MODIFY POINT 30: ADD NEW DATA ENTRIES TO THE PADDED DATA
             const betas = new Float32Array(maxSplatCount * BETAS_ELEMENTS_PER_SPLAT);
-            const sbParams = new Float32Array(maxSplatCount * SB_PARAMS_ELEMENTS_PER_SPLAT * SB_PARAMETER_SIZE_BYTES);
+            const sbParams = new Float32Array(maxSplatCount * SB_PARAMS_ELEMENTS_PER_SPLAT * SplatBuffer.SB_PARAM_FLOAT_COUNT);
             this.fillSplatDataArrays(covariances, centers, colors, undefined, undefined, undefined, betas, sbParams);
             // END MODIFY POINT 30
             // -----------------------
@@ -7028,10 +7047,14 @@ class SplatMesh extends THREE.Mesh {
             this.material.uniformsNeedUpdate = true;
 
 
+            // Each SB is packed into one RGBA texel; we need two textures for 12 floats => 6 floats per SB tex, split 3+RGB and 3+RGB
             const sbParamsTexSize = computeDataTextureSize(SB_PARAMS_ELEMENTS_PER_TEXEL, SB_PARAMS_ELEMENTS_PER_SPLAT);
             // using RGBA
-            const paddedSBParamsForSBTexture1 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL * 4);
-            const paddedSBParamsForSBTexture2 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL * 4);
+            const paddedSBParamsForSBTexture1 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL);
+            const paddedSBParamsForSBTexture2 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL);
+
+            const paddedSBColorsForSBTexture1 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL);
+            const paddedSBColorsForSBTexture2 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL);
 
             console.log("SB PARAMS CALCULATED TEXTURE SIZE: ", sbParamsTexSize.x, sbParamsTexSize.y, paddedSBParamsForSBTexture1.length);
             console.log("SB PARAMS ARRAY SIZE: ", sbParams.length);
@@ -7039,10 +7062,18 @@ class SplatMesh extends THREE.Mesh {
             updateSBParamsPaddedData(0, splatCount, sbParams, paddedSBParamsForSBTexture1, true);
             updateSBParamsPaddedData(0, splatCount, sbParams, paddedSBParamsForSBTexture2, false);
 
+            updateSBColorsPaddedData(0, splatCount, sbParams, paddedSBColorsForSBTexture1, true);
+            updateSBColorsPaddedData(0, splatCount, sbParams, paddedSBColorsForSBTexture2, false);
+
             const sbParamsTex1 = new THREE.DataTexture(paddedSBParamsForSBTexture1, sbParamsTexSize.x, sbParamsTexSize.y, THREE.RGBAFormat, THREE.FloatType);
             sbParamsTex1.needsUpdate = true;
             const sbParamsTex2 = new THREE.DataTexture(paddedSBParamsForSBTexture2, sbParamsTexSize.x, sbParamsTexSize.y, THREE.RGBAFormat, THREE.FloatType);
             sbParamsTex2.needsUpdate = true;
+
+            const sbColorsTex1 = new THREE.DataTexture(paddedSBColorsForSBTexture1, sbParamsTexSize.x, sbParamsTexSize.y, THREE.RGBFormat, THREE.FloatType);
+            sbColorsTex1.needsUpdate = true;
+            const sbColorsTex2 = new THREE.DataTexture(paddedSBColorsForSBTexture2, sbParamsTexSize.x, sbParamsTexSize.y, THREE.RGBFormat, THREE.FloatType);
+            sbColorsTex2.needsUpdate = true;
 
             if (!this.material.uniforms.sbParamsTexture1) {
                 this.material.uniforms.sbParamsTexture1 = { 'type': 't', 'value': null };
@@ -7058,6 +7089,22 @@ class SplatMesh extends THREE.Mesh {
             }
             this.material.uniforms.sbParamsTexture2.value = sbParamsTex2;
             this.material.uniforms.sbParamsTexture2Size.value.copy(sbParamsTexSize);
+            this.material.uniformsNeedUpdate = true;
+
+            if (!this.material.uniforms.sbColorsTexture1) {
+                this.material.uniforms.sbColorsTexture1 = { 'type': 't', 'value': null };
+                this.material.uniforms.sbColorsTexture1Size = { 'type': 'v2', 'value': new THREE.Vector2(1024, 1024) };
+            }
+            this.material.uniforms.sbColorsTexture1.value = sbColorsTex1;
+            this.material.uniforms.sbColorsTexture1Size.value.copy(sbParamsTexSize);
+            this.material.uniformsNeedUpdate = true;
+
+            if (!this.material.uniforms.sbColorsTexture2) {
+                this.material.uniforms.sbColorsTexture2 = { 'type': 't', 'value': null };
+                this.material.uniforms.sbColorsTexture2Size = { 'type': 'v2', 'value': new THREE.Vector2(1024, 1024) };
+            }
+            this.material.uniforms.sbColorsTexture2.value = sbColorsTex2;
+            this.material.uniforms.sbColorsTexture2Size.value.copy(sbParamsTexSize);
             this.material.uniformsNeedUpdate = true;
 
             // END MODIFY POINT 31
@@ -7096,6 +7143,16 @@ class SplatMesh extends THREE.Mesh {
                 'sbParams2': {
                     'data': paddedSBParamsForSBTexture2,
                     'texture': sbParamsTex2,
+                    'size': sbParamsTexSize
+                },
+                'sbColors1': {
+                    'data': paddedSBColorsForSBTexture1,
+                    'texture': sbColorsTex1,
+                    'size': sbParamsTexSize
+                },
+                'sbColors2': {
+                    'data': paddedSBColorsForSBTexture2,
+                    'texture': sbColorsTex2,
                     'size': sbParamsTexSize
                 }
             };
@@ -7201,6 +7258,30 @@ class SplatMesh extends THREE.Mesh {
                 sbParamsTexture2.needsUpdate = true;
             } else {
                 this.updateDataTexture(paddedSBParamsForSBTexture2, sbParamsTexture2Descriptor, sbParamsTexture2Props,
+                                       SB_PARAMS_ELEMENTS_PER_TEXEL, SB_PARAMS_ELEMENTS_PER_SPLAT, 4);
+            }
+
+            const sbColorsTexture1Descriptor = this.splatDataTextures['sbColors1'];
+            const paddedSBColorsForSBTexture1 = sbColorsTexture1Descriptor.data;
+            const sbColorsTexture1 = sbColorsTexture1Descriptor.texture;
+            updateSBColorsPaddedData(this.lastBuildSplatCount, splatCount, this.splatDataTextures.baseData.sbParams, paddedSBColorsForSBTexture1, true);
+            const sbColorsTexture1Props = this.renderer ? this.renderer.properties.get(sbColorsTexture1) : null;
+            if (!sbColorsTexture1Props || !sbColorsTexture1Props.__webglTexture) {
+                sbColorsTexture1.needsUpdate = true;
+            } else {
+                this.updateDataTexture(paddedSBColorsForSBTexture1, sbColorsTexture1Descriptor, sbColorsTexture1Props,
+                                       SB_PARAMS_ELEMENTS_PER_TEXEL, SB_PARAMS_ELEMENTS_PER_SPLAT, 4);
+            }
+            
+            const sbColorsTexture2Descriptor = this.splatDataTextures['sbColors2'];
+            const paddedSBColorsForSBTexture2 = sbColorsTexture2Descriptor.data;
+            const sbColorsTexture2 = sbColorsTexture2Descriptor.texture;
+            updateSBColorsPaddedData(this.lastBuildSplatCount, splatCount, this.splatDataTextures.baseData.sbParams, paddedSBColorsForSBTexture2, false);
+            const sbColorsTexture2Props = this.renderer ? this.renderer.properties.get(sbColorsTexture2) : null;
+            if (!sbColorsTexture2Props || !sbColorsTexture2Props.__webglTexture) {
+                sbColorsTexture2.needsUpdate = true;
+            } else {
+                this.updateDataTexture(paddedSBColorsForSBTexture2, sbColorsTexture2Descriptor, sbColorsTexture2Props,
                                        SB_PARAMS_ELEMENTS_PER_TEXEL, SB_PARAMS_ELEMENTS_PER_SPLAT, 4);
             }
 
