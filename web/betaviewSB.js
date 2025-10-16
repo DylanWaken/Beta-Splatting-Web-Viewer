@@ -196,6 +196,12 @@ class AbortablePromise {
         if (this.abortHandler) this.abortHandler();
     }
 
+    static reject(reason) {
+        return new AbortablePromise((resolve, reject) => {
+            reject(reason);
+        });
+    }
+
 }
 
 class AbortedPromiseError extends Error {
@@ -4094,41 +4100,24 @@ class LoadingSpinner {
 
         this.tasks = [];
 
-        this.message = message || 'Loading...';
+        this.message = message || 'LOADING.....';
         this.container = container || document.body;
 
         this.spinnerContainerOuter = document.createElement('div');
-        this.spinnerContainerOuter.className = `spinnerOuterContainer${this.elementID}`;
+        this.spinnerContainerOuter.className = `loadingTextContainer${this.elementID}`;
         this.spinnerContainerOuter.style.display = 'none';
 
-        this.spinnerContainerPrimary = document.createElement('div');
-        this.spinnerContainerPrimary.className = `spinnerContainerPrimary${this.elementID}`;
-        this.spinnerPrimary = document.createElement('div');
-        this.spinnerPrimary.classList.add(`spinner${this.elementID}`, `spinnerPrimary${this.elementID}`);
-        this.messageContainerPrimary = document.createElement('div');
-        this.messageContainerPrimary.classList.add(`messageContainer${this.elementID}`, `messageContainerPrimary${this.elementID}`);
-        this.messageContainerPrimary.innerHTML = this.message;
+        this.loadingTextElement = document.createElement('div');
+        this.loadingTextElement.className = `loadingTextElement${this.elementID}`;
+        this.loadingTextElement.innerHTML = this.message;
 
-        this.spinnerContainerMin = document.createElement('div');
-        this.spinnerContainerMin.className = `spinnerContainerMin${this.elementID}`;
-        this.spinnerMin = document.createElement('div');
-        this.spinnerMin.classList.add(`spinner${this.elementID}`, `spinnerMin${this.elementID}`);
-        this.messageContainerMin = document.createElement('div');
-        this.messageContainerMin.classList.add(`messageContainer${this.elementID}`, `messageContainerMin${this.elementID}`);
-        this.messageContainerMin.innerHTML = this.message;
-
-        this.spinnerContainerPrimary.appendChild(this.spinnerPrimary);
-        this.spinnerContainerPrimary.appendChild(this.messageContainerPrimary);
-        this.spinnerContainerOuter.appendChild(this.spinnerContainerPrimary);
-
-        this.spinnerContainerMin.appendChild(this.spinnerMin);
-        this.spinnerContainerMin.appendChild(this.messageContainerMin);
-        this.spinnerContainerOuter.appendChild(this.spinnerContainerMin);
+        this.spinnerContainerOuter.appendChild(this.loadingTextElement);
 
         const style = document.createElement('style');
         style.innerHTML = `
+            @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-            .spinnerOuterContainer${this.elementID} {
+            .loadingTextContainer${this.elementID} {
                 width: 100%;
                 height: 100%;
                 margin: 0;
@@ -4136,102 +4125,32 @@ class LoadingSpinner {
                 left: 0;
                 position: absolute;
                 pointer-events: none;
-            }
-
-            .messageContainer${this.elementID} {
-                height: 20px;
-                font-family: arial;
-                font-size: 12pt;
-                color: #ffffff;
-                text-align: center;
-                vertical-align: middle;
-            }
-
-            .spinner${this.elementID} {
-                padding: 15px;
-                background: #07e8d6;
-                z-index:99999;
-            
-                aspect-ratio: 1;
-                border-radius: 50%;
-                --_m: 
-                    conic-gradient(#0000,#000),
-                    linear-gradient(#000 0 0) content-box;
-                -webkit-mask: var(--_m);
-                    mask: var(--_m);
-                -webkit-mask-composite: source-out;
-                    mask-composite: subtract;
-                box-sizing: border-box;
-                animation: load 1s linear infinite;
-            }
-
-            .spinnerContainerPrimary${this.elementID} {
-                z-index:99999;
-                background-color: rgba(128, 128, 128, 0.75);
-                border: #666666 1px solid;
-                border-radius: 5px;
-                padding-top: 20px;
-                padding-bottom: 10px;
-                margin: 0;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-80px, -80px);
-                width: 180px;
-                pointer-events: auto;
-            }
-
-            .spinnerPrimary${this.elementID} {
-                width: 120px;
-                margin-left: 30px;
-            }
-
-            .messageContainerPrimary${this.elementID} {
-                padding-top: 15px;
-            }
-
-            .spinnerContainerMin${this.elementID} {
-                z-index:99999;
-                background-color: rgba(128, 128, 128, 0.75);
-                border: #666666 1px solid;
-                border-radius: 5px;
-                padding-top: 20px;
-                padding-bottom: 15px;
-                margin: 0;
-                position: absolute;
-                bottom: 50px;
-                left: 50%;
-                transform: translate(-50%, 0);
                 display: flex;
-                flex-direction: left;
-                pointer-events: auto;
-                min-width: 250px;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
             }
 
-            .messageContainerMin${this.elementID} {
-                margin-right: 15px;
-            }
-
-            .spinnerMin${this.elementID} {
-                width: 50px;
-                height: 50px;
-                margin-left: 15px;
-                margin-right: 25px;
-            }
-
-            .messageContainerMin${this.elementID} {
-                padding-top: 15px;
-            }
-            
-            @keyframes load {
-                to{transform: rotate(1turn)}
+            .loadingTextElement${this.elementID} {
+                color: #ffffff;
+                font-size: 32px;
+                font-weight: normal;
+                font-family: 'VT323', monospace;
+                text-align: center;
+                letter-spacing: 8px;
+                text-shadow: 2px 2px 0px #000000,
+                            0 0 5px rgba(255, 255, 255, 0.7);
+                image-rendering: pixelated;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: crisp-edges;
+                -webkit-font-smoothing: none;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeSpeed;
             }
 
         `;
         this.spinnerContainerOuter.appendChild(style);
         this.container.appendChild(this.spinnerContainerOuter);
-
-        this.setMinimized(false, true);
 
         this.fadeTransitions = [];
     }
@@ -4283,7 +4202,7 @@ class LoadingSpinner {
     }
 
     show() {
-        this.spinnerContainerOuter.style.display = 'block';
+        this.spinnerContainerOuter.style.display = 'flex';
         this.visible = true;
     }
 
@@ -4304,23 +4223,12 @@ class LoadingSpinner {
     }
 
     setMinimized(minimized, instant) {
-        const showHideSpinner = (element, show, instant, displayStyle, fadeTransitionsIndex) => {
-            if (instant) {
-                element.style.display = show ? displayStyle : 'none';
-            } else {
-                this.fadeTransitions[fadeTransitionsIndex] = fadeElement(element, !show, displayStyle, STANDARD_FADE_DURATION, () => {
-                    this.fadeTransitions[fadeTransitionsIndex] = null;
-                });
-            }
-        };
-        showHideSpinner(this.spinnerContainerPrimary, !minimized, instant, 'block', 0);
-        showHideSpinner(this.spinnerContainerMin, minimized, instant, 'flex', 1);
+        // Simplified - no longer needed with single text element
         this.minimized = minimized;
     }
 
     setMessage(msg) {
-        this.messageContainerPrimary.innerHTML = msg;
-        this.messageContainerMin.innerHTML = msg;
+        this.loadingTextElement.innerHTML = msg;
     }
 }
 
@@ -4341,6 +4249,10 @@ class LoadingProgressBar {
         this.progressBarBox = document.createElement('div');
         this.progressBarBox.className = 'progressBarBox';
 
+        this.loadingText = document.createElement('div');
+        this.loadingText.className = 'loadingText';
+        this.loadingText.innerHTML = 'LOADING.....';
+
         this.progressBarBackground = document.createElement('div');
         this.progressBarBackground.className = 'progressBarBackground';
 
@@ -4348,11 +4260,13 @@ class LoadingProgressBar {
         this.progressBar.className = 'progressBar';
 
         this.progressBarBackground.appendChild(this.progressBar);
+        this.progressBarBox.appendChild(this.loadingText);
         this.progressBarBox.appendChild(this.progressBarBackground);
         this.progressBarContainerOuter.appendChild(this.progressBarBox);
 
         const style = document.createElement('style');
         style.innerHTML = `
+            @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
             .progressBarOuterContainer {
                 width: 100%;
@@ -4362,39 +4276,67 @@ class LoadingProgressBar {
                 left: 0;
                 position: absolute;
                 pointer-events: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
             }
 
             .progressBarBox {
-                z-index:99999;
-                padding: 7px 9px 5px 7px;
-                background-color: rgba(190, 190, 190, 0.75);
-                border: #555555 1px solid;
-                border-radius: 15px;
+                z-index: 99999;
+                padding: 0;
+                background-color: transparent;
+                border: none;
                 margin: 0;
                 position: absolute;
-                bottom: 50px;
+                top: 50%;
                 left: 50%;
-                transform: translate(-50%, 0);
-                width: 180px;
-                height: 30px;
+                transform: translate(-50%, -50%);
+                width: 420px;
                 pointer-events: auto;
+            }
+
+            .loadingText {
+                color: #ffffff;
+                font-size: 32px;
+                font-weight: normal;
+                font-family: 'VT323', monospace;
+                text-align: center;
+                margin-bottom: 18px;
+                letter-spacing: 8px;
+                text-shadow: 2px 2px 0px #000000,
+                            0 0 5px rgba(255, 255, 255, 0.7);
+                image-rendering: pixelated;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: crisp-edges;
+                -webkit-font-smoothing: none;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeSpeed;
             }
 
             .progressBarBackground {
                 width: 100%;
-                height: 25px;
-                border-radius:10px;
-                background-color: rgba(128, 128, 128, 0.75);
-                border: #444444 1px solid;
-                box-shadow: inset 0 0 10px #333333;
+                height: 6px;
+                border-radius: 0px;
+                background-color: rgba(0, 0, 0, 0.95);
+                border: 1px solid rgba(120, 120, 120, 0.9);
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.15),
+                           inset 0 1px 2px rgba(0, 0, 0, 0.9);
+                position: relative;
+                overflow: hidden;
             }
 
             .progressBar {
-                height: 25px;
+                height: 100%;
                 width: 0px;
-                border-radius:10px;
-                background-color: rgba(0, 200, 0, 0.75);
-                box-shadow: inset 0 0 10px #003300;
+                border-radius: 0px;
+                background: #ffffff;
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.8),
+                           0 0 12px rgba(255, 255, 255, 0.5);
+                transition: width 0.15s linear;
+                image-rendering: pixelated;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: crisp-edges;
             }
 
         `;
@@ -4450,16 +4392,17 @@ class InfoPanel {
         this.infoPanelContainer = document.createElement('div');
         const style = document.createElement('style');
         style.innerHTML = `
+            @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
             .infoPanel {
                 width: 430px;
                 padding: 10px;
                 background-color: rgba(50, 50, 50, 0.85);
-                border: #555555 2px solid;
+                border: none;
                 color: #dddddd;
-                border-radius: 10px;
+                border-radius: 0px;
                 z-index: 9999;
-                font-family: arial;
+                font-family: 'DotGothic16', monospace;
                 font-size: 11pt;
                 text-align: left;
                 margin: 0;
@@ -4467,11 +4410,13 @@ class InfoPanel {
                 left:10px;
                 position: absolute;
                 pointer-events: auto;
+                line-height: 1.2;
+                letter-spacing: 0.0em;
             }
 
             .info-panel-cell {
-                margin-bottom: 5px;
-                padding-bottom: 2px;
+                margin-bottom: 8px;
+                padding-bottom: 4px;
             }
 
             .label-cell {
@@ -6251,6 +6196,8 @@ class SplatMesh extends THREE.Mesh {
             uniform vec2 sbColorsTexture1Size;
             uniform vec2 sbColorsTexture2Size;
 
+            uniform int renderMode;  // 1: RGB, 2: DIFFUSE, 3: SPECULAR, 0: RGB
+
             varying vec4 vColor;
             varying vec2 vUv;
 
@@ -6341,8 +6288,8 @@ class SplatMesh extends THREE.Mesh {
                 
                 // Apply first spherical beta contribution
                 vec3 beta1Contribution = betaTerm1 * sbRGBFloat1;
-                if (!any(isnan(beta1Contribution))) {
-                    vColor.rgb += beta1Contribution;
+                if (any(isnan(beta1Contribution))) {
+                    beta1Contribution = vec3(0.0, 0.0, 0.0);
                 }
 
                 // Evaluate second spherical beta
@@ -6360,9 +6307,16 @@ class SplatMesh extends THREE.Mesh {
                 
                 // Apply second spherical beta contribution
                 vec3 beta2Contribution = betaTerm2 * sbRGBFloat2;
-                if (!any(isnan(beta2Contribution))) {
-                    vColor.rgb += beta2Contribution;
+                if (any(isnan(beta2Contribution))) {
+                    beta2Contribution = vec3(0.0, 0.0, 0.0);
                 }
+
+                // Render modes:
+                if (renderMode == 1 || renderMode == 0) {
+                    vColor.rgb += beta1Contribution + beta2Contribution;
+                } else if (renderMode == 2) {
+                    vColor.rgb = beta1Contribution + beta2Contribution;
+                } 
 
                 vec2 sampledCovarianceA = texture(covariancesTexture, getDataUV(3, 0, covariancesTextureSize)).rg;
                 vec2 sampledCovarianceB = texture(covariancesTexture, getDataUV(3, 1, covariancesTextureSize)).rg;
@@ -6580,6 +6534,10 @@ class SplatMesh extends THREE.Mesh {
             'centersColorsTextureSize': {
                 'type': 'v2',
                 'value': new THREE.Vector2(1024, 1024)
+            },
+            'renderMode': {
+                'type': 'i',
+                'value': 0
             }
         };
 
@@ -7140,7 +7098,7 @@ class SplatMesh extends THREE.Mesh {
             // -----------------------
             // MODIFY POINT 30: ADD NEW DATA ENTRIES TO THE PADDED DATA
             const betas = new Float32Array(maxSplatCount * BETAS_ELEMENTS_PER_SPLAT);
-            const sbParams = new Float32Array(maxSplatCount * SB_PARAMS_ELEMENTS_PER_SPLAT * SplatBuffer.SB_PARAM_FLOAT_COUNT);
+            const sbParams = new Float32Array(maxSplatCount * SplatBuffer.SB_PARAM_FLOAT_COUNT);
             this.fillSplatDataArrays(covariances, centers, colors, undefined, undefined, undefined, betas, sbParams);
             // END MODIFY POINT 30
             // -----------------------
@@ -9312,6 +9270,15 @@ class Viewer {
         this.renderMode = renderMode;
     }
 
+    setRenderModeValue(mode) {
+        if (mode >= 0 && mode <= 3) {
+            if (this.splatMesh && this.splatMesh.material && this.splatMesh.material.uniforms) {
+                this.splatMesh.material.uniforms.renderMode.value = mode;
+                this.forceRenderNextFrame();
+            }
+        }
+    }
+
     onKeyDown = function() {
 
         const forward = new THREE.Vector3();
@@ -9351,6 +9318,26 @@ class Viewer {
                     } else {
                         this.infoPanel.hide();
                     }
+                break;
+                case 'Digit0':
+                case 'Numpad0':
+                    this.setRenderModeValue(0);
+                    console.log('Render Mode: 0');
+                break;
+                case 'Digit1':
+                case 'Numpad1':
+                    this.setRenderModeValue(1);
+                    console.log('Render Mode: 1');
+                break;
+                case 'Digit2':
+                case 'Numpad2':
+                    this.setRenderModeValue(2);
+                    console.log('Render Mode: 2');
+                break;
+                case 'Digit3':
+                case 'Numpad3':
+                    this.setRenderModeValue(3);
+                    console.log('Render Mode: 3');
                 break;
             }
         };
@@ -9513,7 +9500,7 @@ class Viewer {
         if (showLoadingUI !== false) showLoadingUI = true;
 
         let loadingTaskId = null;
-        if (showLoadingUI) loadingTaskId = this.loadingSpinner.addTask('Downloading...');
+        if (showLoadingUI) loadingTaskId = this.loadingSpinner.addTask('DOWNLOADING.....');
 
         let downloadDone = false;
 
@@ -9523,19 +9510,19 @@ class Viewer {
                 if (loaderStatus === LoaderStatus.Downloading) {
                     downloadedPercentage = percent;
                     if (percent == 100) {
-                        this.loadingSpinner.setMessageForTask(loadingTaskId, 'Download complete!');
+                        this.loadingSpinner.setMessageForTask(loadingTaskId, 'DOWNLOAD COMPLETE!');
                     } else {
                         if (streamBuildSections) {
-                            this.loadingSpinner.setMessageForTask(loadingTaskId, 'Downloading splats...');
+                            this.loadingSpinner.setMessageForTask(loadingTaskId, 'PROCESSING SPLATS.....');
                         } else {
                             const suffix = percentLabel ? `: ${percentLabel}` : `...`;
-                            this.loadingSpinner.setMessageForTask(loadingTaskId, `Downloading${suffix}`);
+                            this.loadingSpinner.setMessageForTask(loadingTaskId, `DOWNLOADING${suffix}`);
                         }
                     }
                 } else if (loaderStatus === LoaderStatus.Processing) {
-                    this.loadingSpinner.setMessageForTask(loadingTaskId, 'Processing splats...');
+                    this.loadingSpinner.setMessageForTask(loadingTaskId, 'PROCESSING SPLATS.....');
                 } else {
-                    this.loadingSpinner.setMessageForTask(loadingTaskId, 'Ready!');
+                    this.loadingSpinner.setMessageForTask(loadingTaskId, 'READY!');
                 }
             }
             if (options.onProgress) options.onProgress(percent, percentLabel, loaderStatus);
@@ -9869,7 +9856,7 @@ class Viewer {
             const performLoad = () => {
                 return new Promise((resolve) => {
                     if (showLoadingUI) {
-                        splatProcessingTaskId = this.loadingSpinner.addTask('Processing splats...');
+                        splatProcessingTaskId = this.loadingSpinner.addTask('PROCESSING SPLATS.....');
                     }
                     delayedExecute(() => {
                         if (this.isDisposingOrDisposed()) {
