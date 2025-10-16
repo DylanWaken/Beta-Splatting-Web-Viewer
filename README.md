@@ -1,6 +1,6 @@
 # beta-splatting-webviewer
 
-A DBS (Dynamic Beta Splatting) web viewer built with Three.js and Flask.
+A DBS (Deformable Beta Splatting) web viewer built with Three.js and Flask.
 
 ![webview](/assets/webview.png)
 
