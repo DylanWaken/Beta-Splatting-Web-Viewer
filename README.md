@@ -47,10 +47,6 @@ A DBS (Deformable Beta Splatting) web viewer built with Three.js and Flask.
      let path = 'assets/bs/your_file.ply';
      ```
 
-2. **For standard Gaussian Splatting files:**
-   - Place your PLY file in `web/assets/gs/`
-   - The standard viewer is available at `web/index.html`
-
 ### Customization
 
 #### Camera Settings
@@ -136,21 +132,6 @@ To modify the viewer behavior:
 3. **Add new features:** Extend `web/betaview.js` or `web/betaviewSB.js`
 
 For development with auto-reload, Flask debug mode is enabled by default.
-
-## Health Check
-
-The server includes a health check endpoint:
-```bash
-curl http://localhost:8080/health
-```
-
-Response:
-```json
-{
-  "status": "healthy",
-  "message": "3D Gaussian Splat server is running"
-}
-```
 
 ## License
 
