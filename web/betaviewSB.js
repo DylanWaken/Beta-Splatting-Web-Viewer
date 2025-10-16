@@ -1950,10 +1950,18 @@ class PlyParser {
         // END MODIFY POINT 20
         // -----------------------
 
-        for (let i = fromSplat; i <= toSplat; i++) {
+        for (let i = fromSplat; i < toSplat; i++) {
             // added a boundary check condition to prevent out of bounds access
-            if (Math.floor(toOffset / outBytesPerSplat) + i >= header.splatCount) {
-                console.log('[PLY stream][parseToUncompressedSplatBufferSection] out of bounds access', i, toOffset, outBytesPerSplat, header.splatCount);
+            const currentSplatIndex = Math.floor(toOffset / outBytesPerSplat) + i;
+            if (currentSplatIndex >= header.splatCount) {
+                console.warn(
+                    `[PLY stream][parseToUncompressedSplatBufferSection] Boundary check: stopping at splat ${i} to prevent out of bounds write.`,
+                    `\n  Current output splat index: ${currentSplatIndex}`,
+                    `\n  Max splat count: ${header.splatCount}`,
+                    `\n  Loop range: ${fromSplat} to ${toSplat}`,
+                    `\n  toOffset: ${toOffset} bytes`,
+                    `\n  outBytesPerSplat: ${outBytesPerSplat} bytes`
+                );
                 break;
             }
             const parsedSplat = PlyParser.parseToUncompressedSplat(vertexData, i, header, vertexDataOffset);
@@ -2038,6 +2046,8 @@ class PlyParser {
                 newSplat[UncompressedSplatArray.OFFSET.OPACITY] = (1 / (1 + Math.exp(-rawVertex['opacity']))) * 255;
             }
 
+            const useFakeSB = false;
+
             // -----------------------
             // MODIFY POINT 23: ADD NEW DATA ENTRIES HERE
             if (rawVertex['beta'] !== undefined) {
@@ -2046,76 +2056,93 @@ class PlyParser {
                 newSplat[UncompressedSplatArray.OFFSET.BETA] = 0.0;
             }
 
-            if (rawVertex['sb_params_0'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0] = rawVertex['sb_params_0'];
+            if (!useFakeSB) {
+                if (rawVertex['sb_params_0'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0] = rawVertex['sb_params_0'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0] = 0.0;
+                }
+
+                if (rawVertex['sb_params_2'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_1] = rawVertex['sb_params_2'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_1] = 0.0;
+                }
+
+                if (rawVertex['sb_params_4'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2] = rawVertex['sb_params_4'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2] = 0.0;
+                }
+                if (rawVertex['sb_params_6'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] = rawVertex['sb_params_6'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] = 0.0;
+                }
+    
+                if (rawVertex['sb_params_8'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_4] = rawVertex['sb_params_8'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_4] = 0.0;
+                }
+    
+                if (rawVertex['sb_params_10'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_5] = rawVertex['sb_params_10'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_5] = 0.0;
+                }
             } else {
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_0] = 0.0;
-            }
-
-            if (rawVertex['sb_params_1'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_1] = rawVertex['sb_params_1'];
-            } else {
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_1] = 0.0;
-            }
-
-            if (rawVertex['sb_params_2'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2] = rawVertex['sb_params_2'];
-            } else {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2] = 0.0;
-            }
-
-            if (rawVertex['sb_params_3'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] = rawVertex['sb_params_3'];
-            } else {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] = 0.0;
-            }
-
-            if (rawVertex['sb_params_4'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_4] = rawVertex['sb_params_4'];
-            } else {
+                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_2] = 1.0;
+                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_3] = 3.14159 * 0.5;
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_4] = 0.0;
-            }
-
-            if (rawVertex['sb_params_5'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_5] = rawVertex['sb_params_5'];
-            } else {
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_5] = 0.0;
             }
 
-            if (rawVertex['sb_params_6'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6] = rawVertex['sb_params_6'];
-            } else {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6] = 0.0;
-            }
 
-            if (rawVertex['sb_params_7'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_7] = rawVertex['sb_params_7'];
+            if (!useFakeSB) {
+                if (rawVertex['sb_params_1'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6] = rawVertex['sb_params_1'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6] = 0.0;
+                }
+
+                if (rawVertex['sb_params_3'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_7] = rawVertex['sb_params_3'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_7] = 0.0;
+                }
+
+                if (rawVertex['sb_params_5'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_8] = rawVertex['sb_params_5'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_8] = 0.0;
+                }
+                if (rawVertex['sb_params_7'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] = rawVertex['sb_params_7'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] = 0.0;
+                }
+    
+                if (rawVertex['sb_params_9'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_10] = rawVertex['sb_params_9'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_10] = 0.0;
+                }
+    
+                    if (rawVertex['sb_params_11'] !== undefined) {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] = rawVertex['sb_params_11'];
+                } else {
+                    newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] = 0.0;
+                }
             } else {
+                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_6] = 1.0;
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_7] = 0.0;
-            }
-
-            if (rawVertex['sb_params_8'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_8] = rawVertex['sb_params_8'];
-            } else {
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_8] = 0.0;
-            }
-
-            if (rawVertex['sb_params_9'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] = rawVertex['sb_params_9'];
-            } else {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] = 0.0;
-            }
-
-            if (rawVertex['sb_params_10'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_10] = rawVertex['sb_params_10'];
-            } else {
+                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_9] = 3.14159 * 1.5;
                 newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_10] = 0.0;
-            }
-
-            if (rawVertex['sb_params_11'] !== undefined) {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] = rawVertex['sb_params_11'];
-            } else {
-                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] = 0.0;
+                newSplat[UncompressedSplatArray.OFFSET.SB_PARAM_11] = 0.0;  
             }
 
             // END MODIFY POINT 23
@@ -2372,6 +2399,7 @@ class PlyLoader {
         let headerLoaded = false;
         let readyToLoadSplatData = false;
         let compressed = false;
+        let finalBuildTriggered = false;
 
         let streamLoadCompleteResolver;
         let streamLoadPromise = new Promise((resolve) => {
@@ -2465,14 +2493,38 @@ class PlyLoader {
                         const bytesLoadedSinceLastStreamedSection = numBytesDownloaded - numBytesStreamed;
                         if (bytesLoadedSinceLastStreamedSection > streamedSectionSizeBytes || loadComplete) {
                             const numBytesToProcess = numBytesDownloaded - numBytesParsed;
-                            const addedSplatCount = Math.floor(numBytesToProcess / header.bytesPerSplat);
+                            // Calculate how many splats we can read from the input file data
+                            const rawAddedSplatCount = Math.floor(numBytesToProcess / header.bytesPerSplat);
+                            
+                            // Clamp addedSplatCount to not exceed maxSplatCount
+                            const addedSplatCount = Math.min(rawAddedSplatCount, maxSplatCount - splatCount);
+                            if (rawAddedSplatCount > addedSplatCount) {
+                                console.warn(`[PLY stream] Clamping added splat count from ${rawAddedSplatCount} to ${addedSplatCount} to not exceed maxSplatCount (${maxSplatCount}). Current: ${splatCount}`);
+                            }
+
                             const numBytesToParse = addedSplatCount * header.bytesPerSplat;
                             const numBytesLeftOver = numBytesToProcess - numBytesToParse;
                             const newSplatCount = splatCount + addedSplatCount;
-                            const parsedDataViewOffset = numBytesParsed - chunks[0].startBytes;
-                            const dataToParse = new DataView(streamBufferIn, parsedDataViewOffset, numBytesToParse);
+                            
+                            // Skip parsing if we have no splats to add
+                            if (addedSplatCount <= 0) {
+                                if (loadComplete && splatCount < maxSplatCount) {
+                                    console.warn(`[PLY stream] Load complete but splatCount (${splatCount}) < maxSplatCount (${maxSplatCount}). File may be truncated.`);
+                                }
+                                numBytesParsed += numBytesToProcess;
+                                numBytesStreamed = numBytesDownloaded;
+                                
+                                // If download is complete and we have a streamed buffer, trigger final build
+                                if (loadComplete && streamedSplatBuffer && !finalBuildTriggered) {
+                                    console.log(`[PLY stream] Triggering final build (no more splats to add, splatCount=${splatCount})`);
+                                    finalBuildTriggered = true;
+                                    onStreamedSectionProgress(streamedSplatBuffer, true);
+                                }
+                            } else {
+                                const parsedDataViewOffset = numBytesParsed - chunks[0].startBytes;
+                                const dataToParse = new DataView(streamBufferIn, parsedDataViewOffset, numBytesToParse);
 
-                            const outOffset = splatCount * SplatBuffer.CompressionLevels[0].BytesPerSplat + splatDataOffsetBytes;
+                                const outOffset = splatCount * SplatBuffer.CompressionLevels[0].BytesPerSplat + splatDataOffsetBytes;
 
                             if (compressed) {
                                 try {
@@ -2496,45 +2548,57 @@ class PlyLoader {
                                         '\n > Splat Buffer Size =', splatBufferSizeBytesVar,
                                         '\n > Splat Offset =', splatOffsetBytesVar,
                                         '\n > Splat Count =', splatCount,
-                                        '\n > Calculated Num Splats from total buffer=', Math.floor((splatBufferSizeBytesVar - splatOffsetBytesVar) / 48),
+                                        '\n > BytesPerSplat =', SplatBuffer.CompressionLevels[0].BytesPerSplat,
+                                        '\n > Calculated Num Splats from total buffer=', Math.floor((splatBufferSizeBytesVar - splatOffsetBytesVar) / SplatBuffer.CompressionLevels[0].BytesPerSplat),
+                                        '\n > newSplatCount =', newSplatCount,
+                                        '\n > addedSplatCount =', addedSplatCount,
                                     )
 
                                     throw e;
                                 }
                             }
 
-                            splatCount = newSplatCount;
-                            if (!streamedSplatBuffer) {
-                                SplatBuffer.writeSectionHeaderToBuffer({
-                                    maxSplatCount: maxSplatCount,
-                                    splatCount: splatCount,
-                                    bucketSize: 0,
-                                    bucketCount: 0,
-                                    bucketBlockSize: 0,
-                                    compressionScaleRange: 0,
-                                    storageSizeBytes: 0,
-                                    fullBucketCount: 0,
-                                    partiallyFilledBucketCount: 0
-                                }, 0, streamBufferOut, SplatBuffer.HeaderSizeBytes);
-                                streamedSplatBuffer = new SplatBuffer(streamBufferOut, false);
-                            }
-                            streamedSplatBuffer.updateLoadedCounts(1, splatCount);
-                            onStreamedSectionProgress(streamedSplatBuffer, loadComplete);
-                            numBytesStreamed += streamedSectionSizeBytes;
-                            numBytesParsed += numBytesToParse;
-
-                            if (numBytesLeftOver === 0) {
-                                chunks = [];
-                            } else {
-                                let keepChunks = [];
-                                let keepSize = 0;
-                                for (let i = chunks.length - 1; i >= 0; i--) {
-                                    const chunk = chunks[i];
-                                    keepSize += chunk.sizeBytes;
-                                    keepChunks.unshift(chunk);
-                                    if (keepSize >= numBytesLeftOver) break;
+                                splatCount = newSplatCount;
+                                if (!streamedSplatBuffer) {
+                                    SplatBuffer.writeSectionHeaderToBuffer({
+                                        maxSplatCount: maxSplatCount,
+                                        splatCount: splatCount,
+                                        bucketSize: 0,
+                                        bucketCount: 0,
+                                        bucketBlockSize: 0,
+                                        compressionScaleRange: 0,
+                                        storageSizeBytes: 0,
+                                        fullBucketCount: 0,
+                                        partiallyFilledBucketCount: 0
+                                    }, 0, streamBufferOut, SplatBuffer.HeaderSizeBytes);
+                                    streamedSplatBuffer = new SplatBuffer(streamBufferOut, false);
                                 }
-                                chunks = keepChunks;
+                                streamedSplatBuffer.updateLoadedCounts(1, splatCount);
+                                
+                                // Check if this should be the final build
+                                const isFinalBuild = loadComplete && !finalBuildTriggered;
+                                if (isFinalBuild) {
+                                    console.log(`[PLY stream] Triggering final build (all splats processed, splatCount=${splatCount})`);
+                                    finalBuildTriggered = true;
+                                }
+                                
+                                onStreamedSectionProgress(streamedSplatBuffer, isFinalBuild);
+                                numBytesStreamed += streamedSectionSizeBytes;
+                                numBytesParsed += numBytesToParse;
+
+                                if (numBytesLeftOver === 0) {
+                                    chunks = [];
+                                } else {
+                                    let keepChunks = [];
+                                    let keepSize = 0;
+                                    for (let i = chunks.length - 1; i >= 0; i--) {
+                                        const chunk = chunks[i];
+                                        keepSize += chunk.sizeBytes;
+                                        keepChunks.unshift(chunk);
+                                        if (keepSize >= numBytesLeftOver) break;
+                                    }
+                                    chunks = keepChunks;
+                                }
                             }
                         }
                     }
@@ -6033,8 +6097,7 @@ const CENTER_COLORS_ELEMENTS_PER_SPLAT = 4;
 // -----------------------
 // MODIFY POINT 24: ADD NEW DATA ENTRIES SIZE HERE, REGISTER THEIR SIZES
 const BETAS_ELEMENTS_PER_SPLAT = 1;
-const SB_PARAMS_ELEMENTS_PER_SPLAT = 1;  // How many SB groups we have (1 in this case, but it takes up 12 bytes for 1 sb)
-                                         // because this is used in texture size calculation, if we put not 1 here it will change texture parameters
+const SB_PARAMS_ELEMENTS_PER_SPLAT = 4;  // Each splat uses 4 floats per texture (one RGBA texel per splat)
 // END MODIFY POINT 24
 // -----------------------
 
@@ -6243,9 +6306,7 @@ class SplatMesh extends THREE.Mesh {
 
                 vPosition = position.xy;
                 vColor = uintToRGBAVec(sampledCenterColor.r);
-                vec3 originalColor = vColor.rgb;
                 vBeta = texture(betasTexture, getDataUV(1, 0, betasTextureSize)).r;
-                vColor.rgb = vec3(0.0, 0.0, 0.0);
 
                 // Camera-to-point vector in world coordinates
                 vec3 cameraWorldPos = -transpose(mat3(viewMatrix)) * viewMatrix[3].xyz;
@@ -6255,9 +6316,11 @@ class SplatMesh extends THREE.Mesh {
                 vec3 sbThetaPhiBeta1 = texture(sbParamsTexture1, getDataUV(1, 0, sbParamsTexture1Size)).rgb;
                 vec3 sbRGBFloat1 = texture(sbColorsTexture1, getDataUV(1, 0, sbColorsTexture1Size)).rgb;
 
+
                 // TODO:SB evaluate second spherical beta from sbParamsTexture2
-                vec3 sbThetaPhiBeta2 = texture(sbParamsTexture1, getDataUV(1, 0, sbParamsTexture2Size)).rgb;
+                vec3 sbThetaPhiBeta2 = texture(sbParamsTexture2, getDataUV(1, 0, sbParamsTexture2Size)).rgb;
                 vec3 sbRGBFloat2 = texture(sbColorsTexture2, getDataUV(1, 0, sbColorsTexture2Size)).rgb;
+
                 
                 // Spherical Beta evaluation
                 // Normalize the camera forward direction
@@ -6277,7 +6340,10 @@ class SplatMesh extends THREE.Mesh {
                 }
                 
                 // Apply first spherical beta contribution
-                vColor.rgb += betaTerm1 * sbRGBFloat1;
+                vec3 beta1Contribution = betaTerm1 * sbRGBFloat1;
+                if (!any(isnan(beta1Contribution))) {
+                    vColor.rgb += beta1Contribution;
+                }
 
                 // Evaluate second spherical beta
                 vec3 dir_beta_mean2 = vec3(
@@ -6293,7 +6359,10 @@ class SplatMesh extends THREE.Mesh {
                 }
                 
                 // Apply second spherical beta contribution
-                vColor.rgb += betaTerm2 * sbRGBFloat2;
+                vec3 beta2Contribution = betaTerm2 * sbRGBFloat2;
+                if (!any(isnan(beta2Contribution))) {
+                    vColor.rgb += beta2Contribution;
+                }
 
                 vec2 sampledCovarianceA = texture(covariancesTexture, getDataUV(3, 0, covariancesTextureSize)).rg;
                 vec2 sampledCovarianceB = texture(covariancesTexture, getDataUV(3, 1, covariancesTextureSize)).rg;
@@ -6721,6 +6790,11 @@ class SplatMesh extends THREE.Mesh {
         this.finalBuild = finalBuild;
 
         const maxSplatCount = SplatMesh.getTotalMaxSplatCountForSplatBuffers(splatBuffers);
+        const currentSplatCount = SplatMesh.getTotalSplatCountForSplatBuffers(splatBuffers);
+        
+        if (finalBuild) {
+            console.log(`[SplatMesh.build] Final build triggered. MaxSplatCount=${maxSplatCount}, CurrentSplatCount=${currentSplatCount}`);
+        }
 
         const newScenes = SplatMesh.buildScenes(splatBuffers, sceneOptions);
         if (keepSceneTransforms) {
@@ -6736,8 +6810,12 @@ class SplatMesh extends THREE.Mesh {
         if (this.scenes.length > 1 ||
             this.lastBuildSceneCount !== this.scenes.length ||
             this.lastBuildMaxSplatCount !== maxSplatCount ||
-            this.scenes[0].splatBuffer !== this.lastBuildScenes[0].splatBuffer) {
+            this.scenes[0].splatBuffer !== this.lastBuildScenes[0].splatBuffer ||
+            finalBuild) {
                 isUpdateBuild = false;
+                if (finalBuild) {
+                    console.log(`[SplatMesh.build] Final build forcing full texture rebuild (isUpdateBuild=false)`);
+                }
        }
        if (!isUpdateBuild) {
             isUpdateBuild = false;
@@ -6929,22 +7007,41 @@ class SplatMesh extends THREE.Mesh {
             const paddedSBParamsFloatView = new Float32Array(paddedSBParams.buffer);
 
             const SB_SIZE_IN_TEXEL = 4;
+        
 
             for (let c = to; c < from; c++) {
                 if (firstSB) {
                     // Theta, Phi, Beta
-                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 3];
-                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 4];
-                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 5];
+                    const theta = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 3];
+                    const phi = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 4];
+                    const beta = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 5];
+                    
+                    // Log if we detect issues (only first few splats)
+                    if (c < 5 && (isNaN(theta) || isNaN(phi) || isNaN(beta) || !isFinite(theta) || !isFinite(phi) || !isFinite(beta))) {
+                        console.warn(`SB1 params splat ${c}: theta=${theta}, phi=${phi}, beta=${beta}`);
+                    }
+                    
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = isNaN(theta) || !isFinite(theta) ? 0.0 : theta;
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = isNaN(phi) || !isFinite(phi) ? 0.0 : phi;
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = isNaN(beta) || !isFinite(beta) ? 0.0 : beta;
                     // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = 3.14;
                     // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
                     // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 0.0;
                 }
                 else {
                     // Theta, Phi, Beta
-                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 9];
-                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 10];
-                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 11];
+                    const theta = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 9];
+                    const phi = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 10];
+                    const beta = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 11];
+                    
+                    // Log if we detect issues (only first few splats)
+                    if (c < 5 && (isNaN(theta) || isNaN(phi) || isNaN(beta) || !isFinite(theta) || !isFinite(phi) || !isFinite(beta))) {
+                        console.warn(`SB2 params splat ${c}: theta=${theta}, phi=${phi}, beta=${beta}`);
+                    }
+                    
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = isNaN(theta) || !isFinite(theta) ? 0.0 : theta;
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = isNaN(phi) || !isFinite(phi) ? 0.0 : phi;
+                    paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = isNaN(beta) || !isFinite(beta) ? 0.0 : beta;
                     // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL] = 3.14;
                     // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
                     // paddedSBParamsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 0.0;
@@ -6958,22 +7055,64 @@ class SplatMesh extends THREE.Mesh {
             const paddedSBColorsFloatView = new Float32Array(paddedSBColors.buffer);
 
             const SB_SIZE_IN_TEXEL = 4;
+            
+            // Softplus activation with overflow protection
+            const safeSoftplus = (value) => {
+                const beta = Math.log(2) * 10;
+                const scaledValue = value * beta;
+                // Capped softplus computation for numeric stability
+                const cap = 20.0;
+                const cappedValue = Math.max(Math.min(scaledValue, cap), -cap);
+                return Math.log(1.0 + Math.exp(cappedValue)) / beta;
+            };
 
             for (let c = to; c < from; c++) {
                 if (firstSB) {
                     // R, G, B with softplus activation
-                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 0] * Math.log(2) * 10)) / (Math.log(2) * 10);
-                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 1] * Math.log(2) * 10)) / (Math.log(2) * 10);
-                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 2] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    const rawR = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 0];
+                    const rawG = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 1];
+                    const rawB = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 2];
+                    
+                    let r = safeSoftplus(rawR);
+                    let g = safeSoftplus(rawG);
+                    let b = safeSoftplus(rawB);
+                    
+                    // Log if we detect issues (only first few splats to avoid spam)
+                    if (c < 5 && (isNaN(rawR) || isNaN(rawG) || isNaN(rawB) || !isFinite(rawR) || !isFinite(rawG) || !isFinite(rawB))) {
+                        console.warn(`SB1 splat ${c}: raw RGB=[${rawR}, ${rawG}, ${rawB}] -> processed=[${r}, ${g}, ${b}]`);
+                        r = 0.0;
+                        g = 0.0;
+                        b = 0.0;
+                    }
+                    
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = r;
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = g;
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = b;
                     // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = 0.0;
                     // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
                     // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 1.0;
                 }
                 else {
                     // R, G, B with softplus activation
-                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 6] * Math.log(2) * 10)) / (Math.log(2) * 10);
-                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 7] * Math.log(2) * 10)) / (Math.log(2) * 10);
-                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = Math.log(1.0 + Math.exp(sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 8] * Math.log(2) * 10)) / (Math.log(2) * 10);
+                    const rawR = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 6];
+                    const rawG = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 7];
+                    const rawB = sbParamsFloatView[c * SplatBuffer.SB_PARAM_FLOAT_COUNT + 8];
+                    
+                    let r = safeSoftplus(rawR);
+                    let g = safeSoftplus(rawG);
+                    let b = safeSoftplus(rawB);
+                    
+                    // Log if we detect issues (only first few splats to avoid spam)
+                    if (c < 5 && (isNaN(rawR) || isNaN(rawG) || isNaN(rawB) || !isFinite(rawR) || !isFinite(rawG) || !isFinite(rawB))) {
+                        console.warn(`SB2 splat ${c}: raw RGB=[${rawR}, ${rawG}, ${rawB}] -> processed=[${r}, ${g}, ${b}]`);
+                        r = 0.0;
+                        g = 0.0;
+                        b = 0.0;
+                    }
+                    
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = r;
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = g;
+                    paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = b;
                     // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL] = 0.0;
                     // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 1] = 0.0;
                     // paddedSBColorsFloatView[c * SB_SIZE_IN_TEXEL + 2] = 0.0;
@@ -7020,7 +7159,7 @@ class SplatMesh extends THREE.Mesh {
             // set up centers/colors data texture
             const centersColsTexSize = computeDataTextureSize(CENTER_COLORS_ELEMENTS_PER_TEXEL, 4);
             const paddedCentersCols = new Uint32Array(centersColsTexSize.x * centersColsTexSize.y * CENTER_COLORS_ELEMENTS_PER_TEXEL);
-            updateCenterColorsPaddedData(0, splatCount, centers, colors, paddedCentersCols);
+            updateCenterColorsPaddedData(0, maxSplatCount, centers, colors, paddedCentersCols);
             const centersColsTex = new THREE.DataTexture(paddedCentersCols, centersColsTexSize.x, centersColsTexSize.y,
                                                          THREE.RGBAIntegerFormat, THREE.UnsignedIntType);
             centersColsTex.internalFormat = 'RGBA32UI';
@@ -7035,7 +7174,7 @@ class SplatMesh extends THREE.Mesh {
             // set up betas data texture (Float32, independent of compression)
             const betasTexSize = computeDataTextureSize(BETAS_ELEMENTS_PER_TEXEL, BETAS_ELEMENTS_PER_SPLAT);
             const paddedBetas = new Float32Array(betasTexSize.x * betasTexSize.y * BETAS_ELEMENTS_PER_TEXEL);
-            updateBetasPaddedData(0, splatCount, betas, paddedBetas);
+            updateBetasPaddedData(0, maxSplatCount, betas, paddedBetas);
             const betasTex = new THREE.DataTexture(paddedBetas, betasTexSize.x, betasTexSize.y, THREE.RedFormat, THREE.FloatType);
             betasTex.needsUpdate = true;
             if (!this.material.uniforms.betasTexture) {
@@ -7056,8 +7195,16 @@ class SplatMesh extends THREE.Mesh {
             const paddedSBColorsForSBTexture1 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL);
             const paddedSBColorsForSBTexture2 = new Float32Array(sbParamsTexSize.x * sbParamsTexSize.y * SB_PARAMS_ELEMENTS_PER_TEXEL);
 
-            console.log("SB PARAMS CALCULATED TEXTURE SIZE: ", sbParamsTexSize.x, sbParamsTexSize.y, paddedSBParamsForSBTexture1.length);
-            console.log("SB PARAMS ARRAY SIZE: ", sbParams.length);
+            console.log("SB PARAMS CALCULATED TEXTURE SIZE: ", sbParamsTexSize.x, "x", sbParamsTexSize.y, "=", sbParamsTexSize.x * sbParamsTexSize.y, "texels");
+            console.log("SB PARAMS PADDED BUFFER SIZE: ", paddedSBParamsForSBTexture1.length, "floats");
+            console.log("SB PARAMS ARRAY SIZE: ", sbParams.length, "floats");
+            console.log("SPLAT COUNT: ", splatCount, "splats");
+            console.log("MAX SPLAT COUNT: ", maxSplatCount, "splats");
+            console.log("Required buffer size for all splats: ", splatCount * 4, "floats");
+            console.log("Buffer capacity check: ", paddedSBParamsForSBTexture1.length >= splatCount * 4 ? "✓ OK" : "✗ INSUFFICIENT");
+            
+            // Log first few raw sb params values for debugging
+            console.log("First splat raw SB params:", Array.from(sbParams.slice(0, 12)));
 
             updateSBParamsPaddedData(0, splatCount, sbParams, paddedSBParamsForSBTexture1, true);
             updateSBParamsPaddedData(0, splatCount, sbParams, paddedSBParamsForSBTexture2, false);
