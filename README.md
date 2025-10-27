@@ -4,11 +4,11 @@ A DBS (Dynamic Beta Splatting) web viewer built with Three.js. Now deployable as
 
 ![webview](/assets/webview.png)
 
-## 🚀 Live Demo
+## Live Demo
 
-Visit the live demo: `https://YOUR_USERNAME.github.io/Beta-Splatting-Web-Viewer/`
+Visit the live demo: `https://DylanWaken.github.io/Beta-Splatting-Web-Viewer/`
 
-## 📦 Quick Start (Local Development)
+## Quick Start (Local Development)
 
 No server needed! Just open the files locally:
 
@@ -29,7 +29,7 @@ Install the "Live Server" extension and click "Go Live" at the bottom right.
 ### Option 4: Direct file access (may have CORS issues)
 Simply open `index.html` in your browser (some features may not work due to CORS restrictions).
 
-## 🌐 Deploy to GitHub Pages
+## Deploy to GitHub Pages
 
 ### Method 1: GitHub Actions (Recommended)
 
@@ -57,7 +57,7 @@ Simply open `index.html` in your browser (some features may not work due to CORS
    - Click Save
 
 2. **Your site will be live at:**
-   `https://YOUR_USERNAME.github.io/REPOSITORY_NAME/`
+   `https://DylanWaken.github.io/Beta-Splatting-Web-Viewer/`
 
 ### Method 3: Deploy to gh-pages branch
 
@@ -71,7 +71,7 @@ gh-pages -d . -b gh-pages
 
 Then set GitHub Pages to use the `gh-pages` branch in repository settings.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Beta-Splatting-Web-Viewer/
@@ -94,7 +94,7 @@ Beta-Splatting-Web-Viewer/
 └── README.md               # This file
 ```
 
-## 🎮 How to Use
+## How to Use
 
 ### Adding Your Own PLY Files
 
@@ -128,7 +128,7 @@ const viewer = new BetaView.Viewer({
 - **Mouse Wheel:** Zoom in/out
 - **Touch Gestures:** Supported on mobile devices
 
-## 🔧 Customization
+## Customization
 
 ### Change the Default Model
 
@@ -151,7 +151,7 @@ const models = {
 // Add UI controls to switch between models
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### PLY file not loading
 - Verify the file path in the HTML file matches your PLY location
@@ -186,13 +186,13 @@ const models = {
 - Should not occur on GitHub Pages (same origin)
 - If testing locally, use a local server (not file://)
 
-## 🏗️ Development
+## Development
 
 ### Local Development Setup
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Beta-Splatting-Web-Viewer.git
+   git clone https://github.com/DylanWaken/Beta-Splatting-Web-Viewer.git
    cd Beta-Splatting-Web-Viewer
    ```
 
@@ -217,15 +217,15 @@ python -m http.server 8080
 # Verify all models load correctly
 ```
 
-## 📝 Migration Notes
+## Migration Notes
 
 This project has been refactored from a Flask-based backend to a pure static site for GitHub Pages deployment:
 
-- ✅ **Removed:** Flask backend dependencies
-- ✅ **Simplified:** Direct static file serving
-- ✅ **Added:** GitHub Pages support with `.nojekyll`
-- ✅ **Updated:** All file paths to work with static hosting
-- ✅ **Kept:** Original Flask setup in `flaskhost/` folder (for reference)
+- **Removed:** Flask backend dependencies
+- **Simplified:** Direct static file serving
+- **Added:** GitHub Pages support with `.nojekyll`
+- **Updated:** All file paths to work with static hosting
+- **Kept:** Original Flask setup in `flaskhost/` folder (for reference)
 
 ### If you need the Flask backend:
 
@@ -242,18 +242,18 @@ This is useful if you need:
 - Advanced CORS configurations
 - SharedArrayBuffer with specific headers
 
-## 📜 License
+## License
 
 [Add your license information here]
 
-## 🙏 Credits
+## Credits
 
 Built with:
 - [Three.js](https://threejs.org/) - 3D rendering library
 - [Gaussian Splats 3D](https://github.com/mkkellogg/GaussianSplats3D) - Gaussian splatting rendering
 - GitHub Pages - Free static site hosting
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 

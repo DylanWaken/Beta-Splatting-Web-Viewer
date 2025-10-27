@@ -1,13 +1,13 @@
 # Quick Start Guide - GitHub Pages Deployment
 
-Get your Beta Splatting Web Viewer live in 5 minutes! ⚡
+Get your Beta Splatting Web Viewer live in 5 minutes!
 
-## 🎯 Prerequisites
+## Prerequisites
 - GitHub account
 - Git installed
 - This repository on your computer
 
-## 🚀 Deploy in 3 Steps
+## Deploy in 3 Steps
 
 ### Step 1: Push to GitHub (if not done already)
 
@@ -27,25 +27,25 @@ git push origin main
 
 ### Step 2: Enable GitHub Pages
 
-1. Go to your repo: `github.com/YOUR_USERNAME/Beta-Splatting-Web-Viewer`
+1. Go to your repo: `github.com/DylanWaken/Beta-Splatting-Web-Viewer`
 2. Click **Settings** (top menu)
 3. Click **Pages** (left sidebar)
 4. Under "Source", select: **GitHub Actions**
-5. Done! 🎉
+5. Done!
 
 ### Step 3: Wait & Visit
 
 1. Go to **Actions** tab
 2. Watch deployment (1-2 minutes)
-3. Visit: `https://YOUR_USERNAME.github.io/Beta-Splatting-Web-Viewer/`
+3. Visit: `https://DylanWaken.github.io/Beta-Splatting-Web-Viewer/`
 
-## ✅ That's It!
+## That's It!
 
 Your 3D viewer is now live on the internet!
 
 ---
 
-## 🧪 Test Locally First (Optional)
+## Test Locally First (Optional)
 
 Before deploying, test on your computer:
 
@@ -61,7 +61,7 @@ Press Ctrl+C to stop the server.
 
 ---
 
-## 🎨 Customize
+## Customize
 
 ### Change the Default Model
 
@@ -85,11 +85,11 @@ GitHub will automatically redeploy!
 
 ---
 
-## 📱 Share Your Viewer
+## Share Your Viewer
 
 Your live URL:
 ```
-https://YOUR_USERNAME.github.io/Beta-Splatting-Web-Viewer/
+https://DylanWaken.github.io/Beta-Splatting-Web-Viewer/
 ```
 
 Share on:
@@ -101,7 +101,7 @@ Share on:
 
 ---
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
 ### Site not loading?
 - Wait 5 minutes after first deployment
@@ -120,17 +120,17 @@ Share on:
 
 ---
 
-## 📚 Next Steps
+## Next Steps
 
 - [ ] Test your deployed site
 - [ ] Add your own models
 - [ ] Customize camera settings
 - [ ] Share with colleagues
-- [ ] Star the repo ⭐
+- [ ] Star the repo
 
 ---
 
-## 🎓 Learn More
+## Learn More
 
 - **Full Deployment Guide**: `DEPLOYMENT.md`
 - **Complete README**: `README.md`
@@ -139,7 +139,7 @@ Share on:
 
 ---
 
-**Made with ❤️ using Three.js and GitHub Pages**
+**Made with love using Three.js and GitHub Pages**
 
-Happy viewing! 🎉
+Happy viewing!
 
