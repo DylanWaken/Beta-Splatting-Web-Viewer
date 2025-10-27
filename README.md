@@ -1,6 +1,6 @@
 # beta-splatting-webviewer
 
-A DBS (Dynamic Beta Splatting) web viewer built with Three.js. Now deployable as a static site on GitHub Pages!
+A DBS (Deformable Beta Splatting) web viewer built with Three.js. Now deployable as a static site on GitHub Pages!
 
 ![webview](/assets/webview.png)
 
