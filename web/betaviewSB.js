@@ -4232,6 +4232,74 @@ class LoadingSpinner {
     }
 }
 
+class LoadingOverlay {
+
+    constructor(container) {
+        this.container = container || document.body;
+        
+        this.overlayElement = document.createElement('div');
+        this.overlayElement.style.position = 'absolute';
+        this.overlayElement.style.top = '0';
+        this.overlayElement.style.left = '0';
+        this.overlayElement.style.width = '100%';
+        this.overlayElement.style.height = '100%';
+        this.overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        this.overlayElement.style.display = 'none';
+        this.overlayElement.style.alignItems = 'center';
+        this.overlayElement.style.justifyContent = 'center';
+        this.overlayElement.style.zIndex = '10000';
+        
+        this.messageElement = document.createElement('div');
+        this.messageElement.style.fontFamily = "'VT323', monospace";
+        this.messageElement.style.fontSize = '32px';
+        this.messageElement.style.color = '#ffffff';
+        this.messageElement.style.letterSpacing = '8px';
+        this.messageElement.style.textShadow = '2px 2px 0px #000000, 0 0 5px rgba(255, 255, 255, 0.7)';
+        this.messageElement.style.textAlign = 'center';
+        this.messageElement.style.imageRendering = 'pixelated';
+        this.messageElement.style.webkitFontSmoothing = 'none';
+        this.messageElement.textContent = 'LOADING.....';
+        
+        this.overlayElement.appendChild(this.messageElement);
+        this.container.appendChild(this.overlayElement);
+        
+        this.visible = false;
+    }
+
+    show(message) {
+        if (message) {
+            this.messageElement.textContent = message;
+        }
+        this.overlayElement.style.display = 'flex';
+        this.visible = true;
+    }
+
+    hide() {
+        this.overlayElement.style.display = 'none';
+        this.visible = false;
+    }
+
+    setMessage(message) {
+        this.messageElement.textContent = message;
+    }
+
+    setContainer(container) {
+        if (this.container && this.overlayElement.parentElement) {
+            this.container.removeChild(this.overlayElement);
+        }
+        if (container) {
+            this.container = container;
+            this.container.appendChild(this.overlayElement);
+        }
+    }
+
+    dispose() {
+        if (this.container && this.overlayElement.parentElement) {
+            this.container.removeChild(this.overlayElement);
+        }
+    }
+}
+
 class LoadingProgressBar {
 
     constructor(container) {
@@ -6543,7 +6611,7 @@ class SplatMesh extends THREE.Mesh {
             },
             'renderMode': {
                 'type': 'i',
-                'value': 0
+                'value': 1
             }
         };
 
@@ -9158,6 +9226,8 @@ class Viewer {
         this.loadingSpinner.hide();
         this.loadingProgressBar = new LoadingProgressBar(this.rootElement || document.body);
         this.loadingProgressBar.hide();
+        this.loadingOverlay = new LoadingOverlay(this.rootElement || document.body);
+        this.loadingOverlay.hide();
         this.infoPanel = new InfoPanel(this.rootElement || document.body);
         this.infoPanel.hide();
 
@@ -9254,6 +9324,7 @@ class Viewer {
 
         this.loadingProgressBar.setContainer(this.rootElement);
         this.loadingSpinner.setContainer(this.rootElement);
+        this.loadingOverlay.setContainer(this.rootElement);
         this.infoPanel.setContainer(this.rootElement);
 
         this.initialized = true;
@@ -9283,6 +9354,18 @@ class Viewer {
                 this.forceRenderNextFrame();
                 console.log('Render mode changed to:', mode);
             }
+        }
+    }
+
+    showLoadingOverlay(message) {
+        if (this.loadingOverlay) {
+            this.loadingOverlay.show(message);
+        }
+    }
+
+    hideLoadingOverlay() {
+        if (this.loadingOverlay) {
+            this.loadingOverlay.hide();
         }
     }
 
@@ -10084,6 +10167,8 @@ class Viewer {
             this.loadingSpinner.setContainer(null);
             this.loadingProgressBar.hide();
             this.loadingProgressBar.setContainer(null);
+            this.loadingOverlay.hide();
+            this.loadingOverlay.dispose();
             this.infoPanel.setContainer(null);
 
             this.camera = null;

@@ -61,24 +61,36 @@
       pointer-events: none;
     }
 
-    #fileInfo {
+    #infoBox {
       position: absolute;
       top: 10px;
       right: 10px;
       color: #ffffff;
       font-family: 'VT323', monospace;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: normal;
+      line-height: 1.6;
       background-color: rgba(0, 0, 0, 0.85);
       padding: 10px 15px;
       border-radius: 0px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
       z-index: 999;
-      max-width: 400px;
-      word-wrap: break-word;
+      white-space: nowrap;
+      text-align: right;
       letter-spacing: 2px;
       text-shadow: 2px 2px 0px #000000;
       image-rendering: pixelated;
       -webkit-font-smoothing: none;
+    }
+
+    .infoBoxHint {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    .infoBoxFile {
+      color: #ffffff;
+      font-size: 16px;
     }
 
     #renderModeControls {
@@ -130,7 +142,9 @@
 
 <body>
   <div id="dropZone"></div>
-  <div id="fileInfo"></div>
+  <div id="infoBox">
+    <div class="infoBoxHint">DRAG & DROP PLY FILES TO VIEW</div>
+  </div>
   <div id="renderModeControls">
     <button class="renderModeButton active" data-mode="1">RGB</button>
     <button class="renderModeButton" data-mode="3">DIFFUSE</button>
@@ -144,6 +158,8 @@
     let viewer = null;
     let currentLoadPromise = null;
     let isFirstLoad = true;
+    
+    const infoBox = document.getElementById('infoBox');
     
     // Initialize viewer
     function initViewer() {
@@ -217,12 +233,13 @@
       }
     }
     
-    // Update file info display
+    // Update info box display
     function updateFileInfo(fileName) {
-      const fileInfo = document.getElementById('fileInfo');
       if (fileName) {
-        fileInfo.textContent = `LOADED: ${fileName.toUpperCase()}`;
-        fileInfo.style.display = 'block';
+        infoBox.innerHTML = `
+          <div class="infoBoxHint">DRAG & DROP PLY FILES TO VIEW</div>
+          <div class="infoBoxFile">LOADED: ${fileName.toUpperCase()}</div>
+        `;
       }
     }
     
@@ -287,12 +304,33 @@
         
         console.log('File dropped:', file.name);
         
-        // Read file directly as ArrayBuffer instead of using blob URL
+        // Show loading UI immediately
+        let loadingTaskId = null;
+        if (viewer && viewer.loadingSpinner) {
+          loadingTaskId = viewer.loadingSpinner.addTask('READING FILE.....');
+        }
+        
+        // Create FileReader and set up handlers
         const reader = new FileReader();
+        
+        // Add progress tracking for file reading
+        reader.onprogress = (event) => {
+          if (event.lengthComputable && viewer && viewer.loadingSpinner && loadingTaskId) {
+            const percentComplete = (event.loaded / event.total * 100).toFixed(0);
+            viewer.loadingSpinner.setMessageForTask(loadingTaskId, `READING FILE..... ${percentComplete}%`);
+          }
+        };
+        
+        // Read file directly as ArrayBuffer instead of using blob URL
         reader.onload = async (event) => {
           try {
             // Restart viewer first
             await restartViewer();
+            
+            // Show loading screen
+            if (viewer && viewer.showLoadingOverlay) {
+              viewer.showLoadingOverlay('PROCESSING SPLATS.....');
+            }
             
             // Load from the ArrayBuffer data directly
             console.log('Loading file data, size:', event.target.result.byteLength);
@@ -308,30 +346,61 @@
             
             console.log('Splat buffer created, adding to viewer...');
             
-            // Add the splat buffer to the viewer
+            // Update loading message
+            if (viewer && viewer.showLoadingOverlay) {
+              viewer.showLoadingOverlay('BUILDING SCENE.....');
+            }
+            
+            // Add the splat buffer to the viewer (with loading UI)
             await viewer.addSplatBuffers([splatBuffer], [{
               'splatAlphaRemovalThreshold': 1,
               'position': [0, 0, 0],
               'rotation': [0, 0, 0, 1],
               'scale': [1, 1, 1]
-            }], true, false, false);
+            }], true, true, true);
             
             // Start the viewer
             if (!viewer.selfDrivenModeRunning) {
               viewer.start();
             }
             
+            // Hide loading screen
+            if (viewer && viewer.hideLoadingOverlay) {
+              viewer.hideLoadingOverlay();
+            }
+            
+            // Remove spinner task
+            if (viewer && viewer.loadingSpinner && loadingTaskId) {
+              viewer.loadingSpinner.removeTask(loadingTaskId);
+            }
+            
+            // Reset render mode to RGB (mode 1) after loading
+            setRenderMode(1);
+            
             updateFileInfo(file.name);
             console.log('Scene loaded successfully:', file.name);
             
           } catch (error) {
             console.error('Error loading dropped file:', error);
+            // Hide loading on error
+            if (viewer && viewer.hideLoadingOverlay) {
+              viewer.hideLoadingOverlay();
+            }
+            if (viewer && viewer.loadingSpinner && loadingTaskId) {
+              viewer.loadingSpinner.removeTask(loadingTaskId);
+            }
             alert('Error loading file: ' + error.message);
           }
         };
         
         reader.onerror = (error) => {
           console.error('Error reading file:', error);
+          if (viewer && viewer.hideLoadingOverlay) {
+            viewer.hideLoadingOverlay();
+          }
+          if (viewer && viewer.loadingSpinner && loadingTaskId) {
+            viewer.loadingSpinner.removeTask(loadingTaskId);
+          }
           alert('Error reading file');
         };
         
