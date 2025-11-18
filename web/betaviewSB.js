@@ -6196,7 +6196,7 @@ class SplatMesh extends THREE.Mesh {
             uniform vec2 sbColorsTexture1Size;
             uniform vec2 sbColorsTexture2Size;
 
-            uniform int renderMode;  // 1: RGB, 2: DIFFUSE, 3: SPECULAR, 0: RGB
+            uniform int renderMode;  // 0: RGB, 1: RGB, 2: SPECULAR, 3: DIFFUSE
 
             varying vec4 vColor;
             varying vec2 vUv;
@@ -6312,10 +6312,16 @@ class SplatMesh extends THREE.Mesh {
                 }
 
                 // Render modes:
+                // Mode 0 or 1: RGB (base + specular)
+                // Mode 2: Specular only
+                // Mode 3: Diffuse only (base color without specular)
                 if (renderMode == 1 || renderMode == 0) {
                     vColor.rgb += beta1Contribution + beta2Contribution;
                 } else if (renderMode == 2) {
                     vColor.rgb = beta1Contribution + beta2Contribution;
+                } else if (renderMode == 3) {
+                    // Diffuse mode: keep base color, don't add beta contributions
+                    // vColor.rgb is already set from the base color, so do nothing
                 } 
 
                 vec2 sampledCovarianceA = texture(covariancesTexture, getDataUV(3, 0, covariancesTextureSize)).rg;
@@ -9275,6 +9281,7 @@ class Viewer {
             if (this.splatMesh && this.splatMesh.material && this.splatMesh.material.uniforms) {
                 this.splatMesh.material.uniforms.renderMode.value = mode;
                 this.forceRenderNextFrame();
+                console.log('Render mode changed to:', mode);
             }
         }
     }

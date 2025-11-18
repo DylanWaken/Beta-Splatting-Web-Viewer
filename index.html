@@ -81,6 +81,49 @@
       -webkit-font-smoothing: none;
     }
 
+    #renderModeControls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 999;
+    }
+
+    .renderModeButton {
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      font-weight: normal;
+      letter-spacing: 3px;
+      color: #ffffff;
+      background-color: rgba(0, 0, 0, 0.85);
+      border: 2px solid #ffffff;
+      padding: 10px 20px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0px #000000;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+      transition: all 0.2s;
+      image-rendering: pixelated;
+      -webkit-font-smoothing: none;
+    }
+
+    .renderModeButton:hover {
+      background-color: rgba(42, 160, 147, 0.6);
+      border-color: #2AA093;
+      box-shadow: 0 0 15px rgba(42, 160, 147, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .renderModeButton.active {
+      background-color: rgba(244, 162, 97, 0.9);
+      border-color: #F4A261;
+      box-shadow: 0 0 20px rgba(244, 162, 97, 0.8),
+                  inset 0 0 10px rgba(255, 255, 255, 0.3);
+      color: #000000;
+      text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+    }
+
   </style>
 
 </head>
@@ -88,6 +131,11 @@
 <body>
   <div id="dropZone"></div>
   <div id="fileInfo"></div>
+  <div id="renderModeControls">
+    <button class="renderModeButton active" data-mode="1">RGB</button>
+    <button class="renderModeButton" data-mode="3">DIFFUSE</button>
+    <button class="renderModeButton" data-mode="2">SPECULAR</button>
+  </div>
   
   <script type="module">
     import * as BetaView from 'betaview';
@@ -177,6 +225,33 @@
         fileInfo.style.display = 'block';
       }
     }
+    
+    // Render mode switching
+    function setRenderMode(mode) {
+      if (viewer && viewer.splatMesh && viewer.splatMesh.material && viewer.splatMesh.material.uniforms) {
+        viewer.splatMesh.material.uniforms.renderMode.value = mode;
+        viewer.forceRenderNextFrame();
+        console.log('Render mode set to:', mode);
+        
+        // Update button states
+        const buttons = document.querySelectorAll('.renderModeButton');
+        buttons.forEach(btn => {
+          if (parseInt(btn.dataset.mode) === mode) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+    }
+    
+    // Add click handlers to render mode buttons
+    document.querySelectorAll('.renderModeButton').forEach(button => {
+      button.addEventListener('click', () => {
+        const mode = parseInt(button.dataset.mode);
+        setRenderMode(mode);
+      });
+    });
     
     // Drag and drop handlers
     const dropZone = document.getElementById('dropZone');
