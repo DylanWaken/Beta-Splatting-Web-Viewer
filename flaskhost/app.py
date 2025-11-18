@@ -39,6 +39,11 @@ def betaview_js():
     """Serve the Beta View module from web directory"""
     return send_from_directory(WEB_DIR, 'betaviewSB.js', mimetype='application/javascript')
 
+@app.route('/betaviewSB.js')
+def betaview_sb_js():
+    """Serve the Beta View SB module from web directory"""
+    return send_from_directory(WEB_DIR, 'betaviewSB.js', mimetype='application/javascript')
+
 @app.route('/assets/<path:filename>')
 def assets(filename):
     """Serve asset files (PLY files, etc.) from web/assets directory"""

@@ -10,16 +10,75 @@
     {
         "imports": {
             "three": "./three.module.js",
-            "betaview": "./betaview.js"
+            "betaview": "./betaviewSB.js"
         }
     }
   </script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
     body {
       background-color: #000000;
       height: 100vh;
       margin: 0px;
+      position: relative;
+    }
+
+    #dropZone {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+    }
+
+    #dropZone.dragover {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 120, 255, 0.2);
+      border: 4px dashed #0078ff;
+    }
+
+    #dropZone.dragover::after {
+      content: 'DROP PLY FILE HERE TO LOAD';
+      color: #ffffff;
+      font-size: 32px;
+      font-weight: normal;
+      font-family: 'VT323', monospace;
+      letter-spacing: 8px;
+      text-shadow: 2px 2px 0px #000000,
+                  0 0 5px rgba(255, 255, 255, 0.7);
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeSpeed;
+      pointer-events: none;
+    }
+
+    #fileInfo {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: #ffffff;
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      font-weight: normal;
+      background-color: rgba(0, 0, 0, 0.85);
+      padding: 10px 15px;
+      border-radius: 0px;
+      z-index: 999;
+      max-width: 400px;
+      word-wrap: break-word;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 0px #000000;
+      image-rendering: pixelated;
+      -webkit-font-smoothing: none;
     }
 
   </style>
@@ -27,22 +86,187 @@
 </head>
 
 <body>
+  <div id="dropZone"></div>
+  <div id="fileInfo"></div>
+  
   <script type="module">
     import * as BetaView from 'betaview';
     import * as THREE from 'three';
-    const viewer = new BetaView.Viewer({
+    
+    let viewer = null;
+    let currentLoadPromise = null;
+    let isFirstLoad = true;
+    
+    // Initialize viewer
+    function initViewer() {
+      viewer = new BetaView.Viewer({
         'cameraUp': [0, 0, 1],
         'initialCameraPosition': [0, 1, 0],
         'initialCameraLookAt': [1, 0, 0],
+      });
+    }
+    
+    // Fully restart the viewer
+    async function restartViewer() {
+      console.log('Restarting viewer...');
+      
+      // Stop the viewer if it's running
+      if (viewer) {
+        try {
+          if (viewer.selfDrivenModeRunning) {
+            viewer.stop();
+          }
+          await viewer.dispose();
+        } catch (error) {
+          console.warn('Error disposing viewer:', error);
+        }
+        viewer = null;
+      }
+      
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Create a fresh viewer instance
+      initViewer();
+      console.log('Viewer restarted successfully');
+    }
+    
+    // Load a scene from a path or file
+    async function loadScene(pathOrFile, fileName = null) {
+      console.log('Loading scene:', fileName || pathOrFile);
+      
+      // For dropped files, always restart the viewer
+      if (!isFirstLoad) {
+        await restartViewer();
+      }
+      isFirstLoad = false;
+      
+      // Ensure viewer exists
+      if (!viewer) {
+        initViewer();
+      }
+      
+      try {
+        const loadPromise = viewer.addSplatScene(pathOrFile, {
+          'streamView': true
+        });
+        
+        currentLoadPromise = loadPromise;
+        
+        await loadPromise;
+        
+        if (!viewer.selfDrivenModeRunning) {
+          viewer.start();
+        }
+        updateFileInfo(fileName || pathOrFile);
+        console.log('Scene loaded successfully:', fileName || pathOrFile);
+        
+      } catch (error) {
+        console.error('Error loading scene:', error);
+        if (error.message && !error.message.includes('abort')) {
+          alert('Error loading file: ' + error.message);
+        }
+      }
+    }
+    
+    // Update file info display
+    function updateFileInfo(fileName) {
+      const fileInfo = document.getElementById('fileInfo');
+      if (fileName) {
+        fileInfo.textContent = `LOADED: ${fileName.toUpperCase()}`;
+        fileInfo.style.display = 'block';
+      }
+    }
+    
+    // Drag and drop handlers
+    const dropZone = document.getElementById('dropZone');
+    
+    document.body.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('dragover');
     });
-    let path = 'assets/bs/point_cloud.ply';
-
-    viewer.addSplatScene(path, {
-      'streamView': true
-    })
-    .then(() => {
-        viewer.start();
+    
+    document.body.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.target === document.body) {
+        dropZone.classList.remove('dragover');
+      }
     });
+    
+    document.body.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const file = files[0];
+        
+        // Check if it's a PLY file
+        if (!file.name.toLowerCase().endsWith('.ply')) {
+          alert('Please drop a .ply file');
+          return;
+        }
+        
+        console.log('File dropped:', file.name);
+        
+        // Read file directly as ArrayBuffer instead of using blob URL
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            // Restart viewer first
+            await restartViewer();
+            
+            // Load from the ArrayBuffer data directly
+            console.log('Loading file data, size:', event.target.result.byteLength);
+            const splatBuffer = await BetaView.PlyLoader.loadFromFileData(
+              event.target.result,
+              1,  // minimumAlpha
+              0,  // compressionLevel
+              0,  // sectionSize
+              new THREE.Vector3(),  // sceneCenter
+              undefined,  // blockSize
+              undefined   // bucketSize
+            );
+            
+            console.log('Splat buffer created, adding to viewer...');
+            
+            // Add the splat buffer to the viewer
+            await viewer.addSplatBuffers([splatBuffer], [{
+              'splatAlphaRemovalThreshold': 1,
+              'position': [0, 0, 0],
+              'rotation': [0, 0, 0, 1],
+              'scale': [1, 1, 1]
+            }], true, false, false);
+            
+            // Start the viewer
+            if (!viewer.selfDrivenModeRunning) {
+              viewer.start();
+            }
+            
+            updateFileInfo(file.name);
+            console.log('Scene loaded successfully:', file.name);
+            
+          } catch (error) {
+            console.error('Error loading dropped file:', error);
+            alert('Error loading file: ' + error.message);
+          }
+        };
+        
+        reader.onerror = (error) => {
+          console.error('Error reading file:', error);
+          alert('Error reading file');
+        };
+        
+        reader.readAsArrayBuffer(file);
+      }
+    });
+    
+    // Load default scene on startup
+    const defaultPath = 'assets/bs/point_cloud.ply';
+    loadScene(defaultPath, 'point_cloud.ply (default)');
   </script>
 </body>
 
